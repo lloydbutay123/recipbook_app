@@ -20,6 +20,14 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /*************  ✨ Codeium Command ⭐  *************/
+  /// Returns a UI that is a column with a title and a login form in it.
+  ///
+  /// The column is as wide as the screen and as tall as possible, with its
+  /// children evenly distributed from top to bottom and centered horizontally.
+  ///
+  /// The children are the result of calling [_title] and [_loginForm].
+  /******  2c99df3c-dcbc-4d26-894b-7086adc6e087  *******/
   Widget _buildUi() {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width,
