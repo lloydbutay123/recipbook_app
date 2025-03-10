@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "447340509164",
+    "project_id": "recipbook-5ed02",
+    "storage_bucket": "recipbook-5ed02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:447340509164:android:33354ac60d412512a0f2c9",
+        "android_client_info": {
+          "package_name": "com.example.recepies_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmQW_4cyFF1_P5On0RztWhidnD4K58_uc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
