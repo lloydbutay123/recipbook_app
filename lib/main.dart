@@ -1,8 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:recepies_app/firebase_options.dart';
+import 'package:recepies_app/pages/landing_page.dart';
 import 'package:recepies_app/pages/login_page.dart';
-import 'package:recepies_app/pages/signup_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,8 +36,20 @@ class MyApp extends StatelessWidget {
         //
         // This works for code too, not just values: Most code changes can be
         // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        textTheme: GoogleFonts.poppinsTextTheme(),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.white, // Seed for consistency
+          primary: const Color(0xFFFF5722), // Appetizing Orange
+          secondary: const Color(0xFF4CAF50), // Fresh Green
+          tertiary: const Color(0xFFFFC107), // Lemon Yellow
+          background: const Color(0xFFFAF3E0), // Soft Warm Beige
+          surface: Colors.white, // Card surfaces
+          error: Colors.redAccent,
+          onPrimary: Colors.white, // Text on primary color
+          onSecondary: Colors.white, // Text on secondary color
+        ),
         useMaterial3: true,
+        scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: const AppBarTheme(
           titleTextStyle: TextStyle(
             color: Colors.black,
@@ -45,7 +58,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SignupPage(),
+      home: const LandingPage(),
       routes: {LoginPage.routeName: (context) => const LoginPage()},
     );
   }

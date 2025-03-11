@@ -14,10 +14,7 @@ class SignupPage extends StatefulWidget {
 class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("Signup")),
-      body: SafeArea(child: _buildUi()),
-    );
+    return Scaffold(body: SafeArea(child: _buildUi()));
   }
 
   Widget _buildUi() {
@@ -33,9 +30,19 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Widget _title() {
-    return const Text(
-      "RecipBook",
-      style: TextStyle(fontSize: 35, fontWeight: FontWeight.w300),
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width * 0.90,
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Welcome!",
+            style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 5),
+          Text("Create your Account", style: TextStyle(fontSize: 35)),
+        ],
+      ),
     );
   }
 
@@ -80,19 +87,35 @@ class _SignupPageState extends State<SignupPage> {
         key: formKey,
         child: Column(
           mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(hintText: "Email"),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10), // Rounded border
+                  borderSide: BorderSide(color: Colors.grey, width: 1),
+                ),
+                labelStyle: const TextStyle(color: Colors.black),
+                labelText: "Email",
+                hintText: "Enter Email Address",
+              ),
             ),
             TextFormField(
               controller: _passwordController,
               keyboardType: TextInputType.text,
               obscureText: true,
-              decoration: InputDecoration(hintText: "Password"),
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10), // Rounded border
+                  borderSide: BorderSide(color: Colors.grey, width: 1),
+                ),
+                labelStyle: const TextStyle(color: Colors.black),
+                labelText: "Password",
+                hintText: "Enter Password",
+              ),
             ),
             _loginButton(),
             _goToLogin(),
@@ -104,11 +127,19 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _loginButton() {
     return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.60,
+      height: 60,
+      width: MediaQuery.sizeOf(context).width,
       child: ElevatedButton(
         onPressed: () async {
           await createUsernameWithEmailAndPassword();
         },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.orangeAccent,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
         child: const Text("Register"),
       ),
     );
@@ -116,6 +147,7 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _goToLogin() {
     return TextButton(
+      style: TextButton.styleFrom(foregroundColor: Colors.black),
       onPressed: () {
         Navigator.pushReplacementNamed(context, LoginPage.routeName);
       },

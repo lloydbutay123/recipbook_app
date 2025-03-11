@@ -8,7 +8,6 @@ class RecipePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(recipe['name']), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -16,7 +15,7 @@ class RecipePage extends StatelessWidget {
           children: [
             // Recipe Image
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(15),
               child: Image.network(
                 recipe['image'],
                 width: double.infinity,

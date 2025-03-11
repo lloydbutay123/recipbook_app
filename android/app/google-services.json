@@ -12,7 +12,20 @@
           "package_name": "com.example.recepies_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "447340509164-b1de4nm5dssnsbjojfmr0b5q3jc4fbqb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.recepies_app",
+            "certificate_hash": "f4acbcbfdeb3fc5097dd125dda04a90af41f1b68"
+          }
+        },
+        {
+          "client_id": "447340509164-nsv7cpqj4llblj0ejd967q5mb7c5d525.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBmQW_4cyFF1_P5On0RztWhidnD4K58_uc"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "447340509164-nsv7cpqj4llblj0ejd967q5mb7c5d525.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "447340509164-1hvbndhm5lbnckc3va9nrg90ik2trb1t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.recepiesApp"
+              }
+            }
+          ]
         }
       }
     }

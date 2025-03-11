@@ -13,7 +13,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final String url = "https://dummyjson.com/recipes";
   List<dynamic> data = [];
-  bool isLoading = true; // To handle loading state
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -56,10 +56,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("RecipBook"), centerTitle: true),
-      body: SafeArea(child: _buildUi()),
-    );
+    return Scaffold(body: SafeArea(child: _buildUi()));
   }
 
   Widget _buildUi() {
@@ -73,18 +70,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _recipeTypeButtons() {
-    return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.05,
-      width: MediaQuery.sizeOf(context).width * 0.90,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildMealButton("all", "🍽️ All"),
-          _buildMealButton("snack", "🍿 Snack"),
-          _buildMealButton("breakfast", "🍳 Breakfast"),
-          _buildMealButton("lunch", "🍗 Lunch"),
-          _buildMealButton("dinner", "🍽️ Dinner"),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 20.0),
+      child: SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.07,
+        width: MediaQuery.sizeOf(context).width * 0.90,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          children: [
+            _buildMealButton("all", "🍽️ All"),
+            _buildMealButton("snack", "🍿 Snack"),
+            _buildMealButton("breakfast", "🍳 Breakfast"),
+            _buildMealButton("lunch", "🍗 Lunch"),
+            _buildMealButton("dinner", "🍽️ Dinner"),
+          ],
+        ),
       ),
     );
   }
@@ -97,6 +97,11 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           fetchData(mealType); // Fetch filtered data
         },
+        style: FilledButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(15)),
+          ),
+        ),
         child: Text(label),
       ),
     );
@@ -117,31 +122,80 @@ class _HomePageState extends State<HomePage> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         var recipe = data[index];
-        return Card(
-          margin: const EdgeInsets.all(10),
-          child: ListTile(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RecipePage(recipe: recipe),
-                ),
-              );
-            },
-            leading: Image.network(
-              recipe['image'],
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-            ),
-            title: Text(recipe['name']),
-            subtitle: Row(
-              children: [
-                Expanded(
-                  child: Text("Category: ${recipe['mealType'].join(", ")}"),
-                ),
-                Row(children: [Text("${recipe['rating']} ⭐")]),
-              ],
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecipePage(recipe: recipe),
+              ),
+            );
+          },
+          child: SizedBox(
+            height: 150, // Fixed height for the card
+            child: Card(
+              elevation: 0, // Removes shadow
+              color: Colors.white,
+              margin: const EdgeInsets.all(10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Row(
+                children: [
+                  // Image filling full height
+                  Padding(
+                    padding: const EdgeInsets.all(5.0),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.all(Radius.circular(15)),
+                      child: Image.network(
+                        recipe['image'],
+                        width: MediaQuery.sizeOf(context).width * 0.35,
+                        height: double.infinity, // Full height of SizedBox
+                        fit: BoxFit.cover, // Ensures the image fills its space
+                      ),
+                    ),
+                  ),
+                  // Content aligned to the start
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Column(
+                        mainAxisAlignment:
+                            MainAxisAlignment.center, // Centers vertically
+                        crossAxisAlignment:
+                            CrossAxisAlignment
+                                .start, // Aligns text at the start
+                        children: [
+                          Text(
+                            recipe['name'],
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Category: ${recipe['mealType'].join(", ")}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "${recipe['rating']} ⭐",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
