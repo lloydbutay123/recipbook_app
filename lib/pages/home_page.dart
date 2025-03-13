@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:recepies_app/pages/browse_recipes_page.dart';
 import 'package:recepies_app/pages/explore_page.dart';
 import 'package:recepies_app/pages/farovite_page.dart';
-import 'package:recepies_app/pages/profile_page.dart';
+import 'package:recepies_app/pages/profile/profile_page.dart';
 import 'package:recepies_app/widgets/bottom_navigation_bar.dart';
 
 class HomePage extends StatefulWidget {

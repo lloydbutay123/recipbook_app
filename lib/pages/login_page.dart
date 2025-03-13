@@ -147,14 +147,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _signInScreen() {
-    final AuthService _authService = AuthService();
+    final AuthService authService = AuthService();
     return Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GestureDetector(
             onTap: () async {
-              final user = await _authService.signInWithGoogle();
+              final user = await authService.signInWithGoogle();
               if (user != null) {
                 if (mounted) {
                   ScaffoldMessenger.of(
@@ -176,7 +176,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(width: 10),
           GestureDetector(
             onTap: () async {
-              final user = await _authService.signInWithFacebook();
+              final user = await authService.signInWithFacebook();
               if (user != null) {
                 if (mounted) {
                   ScaffoldMessenger.of(
@@ -198,7 +198,7 @@ class _LoginPageState extends State<LoginPage> {
           SizedBox(width: 10),
           GestureDetector(
             onTap: () async {
-              final user = await _authService.signInWithFacebook();
+              final user = await authService.signInWithFacebook();
               if (user != null) {
                 if (mounted) {
                   ScaffoldMessenger.of(

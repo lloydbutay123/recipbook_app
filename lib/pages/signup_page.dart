@@ -47,16 +47,25 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   final formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool isLoading = false;
 
   Future<void> createUsernameWithEmailAndPassword() async {
     try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+      UserCredential userCredential = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(
+            email: _emailController.text.trim(),
+            password: _passwordController.text.trim(),
+          );
+
+      User? user = userCredential.user;
+      if (user != null) {
+        await user.updateDisplayName(_nameController.text.trim());
+        await user.reload();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Registration successful! Please log in")),
@@ -90,6 +99,19 @@ class _SignupPageState extends State<SignupPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            TextFormField(
+              controller: _nameController,
+              keyboardType: TextInputType.text,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10), // Rounded border
+                  borderSide: BorderSide(color: Colors.grey, width: 1),
+                ),
+                labelStyle: const TextStyle(color: Colors.black),
+                labelText: "Name",
+                hintText: "Enter your Name",
+              ),
+            ),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,

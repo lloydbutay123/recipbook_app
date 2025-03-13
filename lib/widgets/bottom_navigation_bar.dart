@@ -18,10 +18,10 @@ class BottomNavBar extends StatelessWidget {
           icon: Icon(Icons.restaurant_outlined),
           label: 'Recipes',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+        BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Explore'),
         BottomNavigationBarItem(
           icon: Icon(Icons.favorite_outline),
-          label: 'Favorites',
+          label: 'Saved',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.person_outline),

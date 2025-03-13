@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:recepies_app/pages/recipe_page.dart';
@@ -15,14 +17,89 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   List<dynamic> data = [];
   bool isLoading = true;
   String selectedMealType = 'all';
+  Set<String> favoriteRecipeIds = {};
+  List<dynamic> mostPopularRecipes = [];
 
   @override
   void initState() {
     super.initState();
     fetchData("all");
+    _loadFavorites();
   }
 
-  // Fetch data based on selected meal type
+  void _loadFavorites() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites');
+
+    try {
+      QuerySnapshot snapshot = await favoritesRef.get();
+      setState(() {
+        favoriteRecipeIds =
+            snapshot.docs
+                .map((doc) => doc.id)
+                .toSet(); // Store favorites in state
+      });
+    } catch (e) {
+      print("Error loading favorites: $e");
+    }
+  }
+
+  void _saveFavorite(String recipeId, Map<String, dynamic> recipe) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites');
+
+    try {
+      await favoritesRef.doc(recipeId).set(recipe);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Recipe added to favorites.")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to add recipe to favorites: $e")),
+      );
+    }
+  }
+
+  void _toggleFavorite(String recipeId, Map<String, dynamic> recipe) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites');
+
+    try {
+      setState(() {
+        if (favoriteRecipeIds.contains(recipeId)) {
+          favoriteRecipeIds.remove(recipeId);
+        } else {
+          favoriteRecipeIds.add(recipeId);
+        }
+      });
+
+      if (favoriteRecipeIds.contains(recipeId)) {
+        await favoritesRef.doc(recipeId).set(recipe);
+      } else {
+        await favoritesRef.doc(recipeId).delete();
+      }
+    } catch (e) {
+      print("Error updating favorite: $e");
+    }
+  }
+
   Future<void> fetchData(String mealType) async {
     setState(() {
       isLoading = true;
@@ -33,6 +110,17 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
       var jsonData = jsonDecode(res.body);
 
       setState(() {
+        if (mostPopularRecipes.isEmpty) {
+          mostPopularRecipes = List.from(
+            jsonData['recipes'],
+          ); // Store all recipes
+          mostPopularRecipes.sort((a, b) {
+            if (b['rating'] == a['rating']) {
+              return b['reviewCount'].compareTo(a['reviewCount']);
+            }
+            return b['rating'].compareTo(a['rating']);
+          });
+        }
         if (mealType == "all") {
           data = jsonData['recipes'];
         } else {
@@ -63,38 +151,148 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   Widget _buildUi() {
     return Column(
       children: [
-        _recipeTypeButtons(),
-        const SizedBox(height: 10),
-        Expanded(child: _recipeList()),
+        _profileMenu(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width * 0.90,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Most Popular",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          "See all",
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _popularRecipesList(),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: MediaQuery.sizeOf(context).width * 0.90,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Choose your food",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          "See all",
+                          style: TextStyle(color: Colors.grey.shade500),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                _recipeTypeButtons(),
+                const SizedBox(height: 10),
+                _recipeList(),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _recipeTypeButtons() {
+  Widget _profileMenu() {
+    User? user = FirebaseAuth.instance.currentUser;
+    String? userName = user?.displayName;
+
     return Padding(
-      padding: const EdgeInsets.only(top: 20.0),
+      padding: const EdgeInsets.symmetric(vertical: 20),
       child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.06,
         width: MediaQuery.sizeOf(context).width * 0.90,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildMealButton("all", "🍽️ All"),
-            _buildMealButton("snack", "🍿 Snack"),
-            _buildMealButton("breakfast", "🍳 Breakfast"),
-            _buildMealButton("lunch", "🍗 Lunch"),
-            _buildMealButton("dinner", "🍽️ Dinner"),
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.all(Radius.circular(50)),
+                  child: Image.asset(
+                    "assets/images/johnlloyd.jpg",
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Hello 👋",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      "$userName",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                IconButton(icon: const Icon(Icons.search), onPressed: () {}),
+                IconButton(
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: () {},
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  // Function to create filter buttons dynamically
+  Widget _recipeTypeButtons() {
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.06,
+      width: MediaQuery.sizeOf(context).width * 0.90,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildMealButton("all", "🍽️ All"),
+          _buildMealButton("snack", "🍿 Snack"),
+          _buildMealButton("breakfast", "🍳 Breakfast"),
+          _buildMealButton("lunch", "🍗 Lunch"),
+          _buildMealButton("dinner", "🍽️ Dinner"),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMealButton(String mealType, String label) {
     bool isSelected = selectedMealType == mealType;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5.0),
+      padding: const EdgeInsets.only(right: 10),
       child: FilledButton(
         onPressed: () {
           setState(() {
@@ -103,7 +301,8 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
           fetchData(mealType); // Fetch filtered data
         },
         style: FilledButton.styleFrom(
-          backgroundColor: isSelected ? Colors.orangeAccent : Colors.white,
+          backgroundColor:
+              isSelected ? Colors.orangeAccent : Colors.grey.shade200,
           foregroundColor: isSelected ? Colors.white : Colors.black,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(15)),
@@ -114,21 +313,98 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     );
   }
 
+  Widget _popularRecipesList() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (data.isEmpty) {
+      return const Center(child: Text("No popular recipes found."));
+    }
+    List<dynamic> popularRecipes = data.take(5).toList();
+    double screenWidth = MediaQuery.sizeOf(context).width;
+    double screenHeight = MediaQuery.sizeOf(context).height;
+
+    return SizedBox(
+      height: screenHeight * 0.20,
+      width: screenWidth * 0.90,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: popularRecipes.length,
+        itemBuilder: (context, index) {
+          var recipe = popularRecipes[index];
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RecipePage(recipe: recipe),
+                ),
+              );
+            },
+            child: Container(
+              padding: EdgeInsets.only(right: 10),
+              width: screenWidth * 0.55,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Container(
+                  padding: EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.network(
+                          recipe['image'],
+                          width: screenWidth * 0.55,
+                          height: screenHeight * 0.15,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        recipe['name'],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _recipeList() {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      ); // Show loading indicator
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (data.isEmpty) {
       return const Center(child: Text("No recipes found for this category."));
     }
 
+    double screenWidth = MediaQuery.sizeOf(context).width;
+    double screenHeight = MediaQuery.sizeOf(context).height;
+
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: data.length,
       itemBuilder: (context, index) {
         var recipe = data[index];
+        String recipeId = recipe['id'].toString();
+        bool isFavorite = favoriteRecipeIds.contains(recipeId);
 
         return GestureDetector(
           onTap: () {
@@ -140,11 +416,11 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
             );
           },
           child: SizedBox(
-            height: 150, // Fixed height for the card
+            height: screenHeight * 0.18,
             child: Card(
-              elevation: 0, // Removes shadow
+              elevation: 0,
               color: Colors.white,
-              margin: const EdgeInsets.all(10),
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -157,9 +433,9 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                       borderRadius: const BorderRadius.all(Radius.circular(15)),
                       child: Image.network(
                         recipe['image'],
-                        width: MediaQuery.sizeOf(context).width * 0.35,
-                        height: double.infinity, // Full height of SizedBox
-                        fit: BoxFit.cover, // Ensures the image fills its space
+                        width: screenWidth * 0.35,
+                        height: screenHeight * 0.16,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
@@ -172,14 +448,10 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width: MediaQuery.sizeOf(context).width * 0.35,
+                            width: MediaQuery.sizeOf(context).width * 0.30,
                             child: Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment
-                                      .center, // Centers vertically
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start, // Aligns text at the start
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   recipe['name'],
@@ -212,20 +484,29 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                             ),
                           ),
                           Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .spaceEvenly, // Centers vertically
-                            crossAxisAlignment:
-                                CrossAxisAlignment
-                                    .start, // Aligns text at the star
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.more_vert,
-                                color: Colors.grey.shade400,
+                              IconButton(
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  color: Colors.grey.shade400,
+                                ),
+                                onPressed: () {},
                               ),
-                              Icon(
-                                Icons.favorite_outline,
-                                color: Colors.grey.shade400,
+                              IconButton(
+                                onPressed: () {
+                                  _toggleFavorite(recipeId, recipe);
+                                },
+                                icon: Icon(
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color:
+                                      isFavorite
+                                          ? Colors.red
+                                          : Colors.grey.shade400,
+                                ),
                               ),
                             ],
                           ),

@@ -7,77 +7,137 @@ class RecipePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    double screenHeight = MediaQuery.sizeOf(context).height;
+    double screenWidth = MediaQuery.sizeOf(context).width;
+    double containerHeight = screenHeight * 0.4;
+    double imageSize = screenWidth * 0.5;
+
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: IconButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              icon: Icon(Icons.close, size: 24),
+            ),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Recipe Image
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.network(
-                recipe['image'],
-                width: double.infinity,
-                height: 200,
-                fit: BoxFit.cover,
+            Expanded(
+              child: Center(
+                child: Container(
+                  width: imageSize,
+                  height: imageSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 10,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: Image.network(
+                      recipe['image'],
+                      width: imageSize,
+                      height: imageSize,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
               ),
             ),
+
             const SizedBox(height: 10),
 
-            // Recipe Name
-            Text(
-              recipe['name'],
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-
-            // Rating & Review Count
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.amber, size: 20),
-                Text(
-                  " ${recipe['rating']} (${recipe['reviewCount']} reviews)",
-                  style: const TextStyle(fontSize: 16),
+            Container(
+              height: containerHeight,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(50),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(50),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Text(
+                          recipe['name'],
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 40),
+                      const Text(
+                        "Ingredients:",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...recipe['ingredients'].map<Widget>((ingredient) {
+                        return Row(
+                          children: [
+                            Icon(Icons.emoji_food_beverage),
+                            Text(
+                              " $ingredient",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        );
+                      }).toList(),
+                      const SizedBox(height: 40),
+                      const Text(
+                        "Instructions:",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      ...recipe['instructions'].map<Widget>((instruction) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4.0),
+                          child: Row(
+                            crossAxisAlignment:
+                                CrossAxisAlignment
+                                    .start, // ✅ Aligns text to start
+                            children: [
+                              Icon(Icons.integration_instructions_outlined),
+                              SizedBox(width: 20),
+                              Expanded(
+                                child: Text(
+                                  "$instruction",
+                                  style: const TextStyle(fontSize: 16),
+                                  softWrap: true,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-            const SizedBox(height: 10),
-
-            // Category
-            Text(
-              "Category: ${recipe['mealType'].join(", ")}",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-
-            // Ingredients Section
-            const Text(
-              "Ingredients:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            ...recipe['ingredients'].map<Widget>((ingredient) {
-              return Text(
-                "- $ingredient",
-                style: const TextStyle(fontSize: 16),
-              );
-            }).toList(),
-            const SizedBox(height: 10),
-
-            // Instructions Section
-            const Text(
-              "Instructions:",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            ...recipe['instructions'].map<Widget>((instruction) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
-                child: Text(
-                  "• $instruction",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              );
-            }).toList(),
           ],
         ),
       ),

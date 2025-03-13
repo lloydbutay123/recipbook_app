@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:recepies_app/pages/recipe_page.dart';
@@ -15,11 +17,35 @@ class _ExplorePageState extends State<ExplorePage> {
   List<dynamic> data = [];
   bool isLoading = true;
   String selectedMealType = 'all';
+  Set<String> favoriteRecipeIds = {};
 
   @override
   void initState() {
     super.initState();
     fetchData("all");
+  }
+
+  void _saveFavorite(String recipeId, Map<String, dynamic> recipe) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites');
+
+    try {
+      await favoritesRef.doc(recipeId).set(recipe);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Recipe added to favorites.")),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to add recipe to favorites: $e")),
+      );
+    }
   }
 
   // Fetch data based on selected meal type
@@ -65,12 +91,19 @@ class _ExplorePageState extends State<ExplorePage> {
         ),
         centerTitle: true,
         backgroundColor: Colors.grey.shade100,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(
-              right: 20,
-            ), // ✅ Adds right padding for More button
-            child: Icon(Icons.more_horiz_sharp, size: 24), // ✅ More button
+            padding: const EdgeInsets.only(right: 20),
+            child: IconButton(
+              onPressed: () {},
+              icon: Icon(Icons.more_horiz_sharp, size: 24),
+            ),
           ),
         ],
       ),
@@ -148,6 +181,7 @@ class _ExplorePageState extends State<ExplorePage> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         var recipe = data[index];
+        String recipeId = recipe['id'].toString();
 
         return GestureDetector(
           onTap: () {
@@ -231,20 +265,21 @@ class _ExplorePageState extends State<ExplorePage> {
                             ),
                           ),
                           Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .spaceEvenly, // Centers vertically
-                            crossAxisAlignment:
-                                CrossAxisAlignment
-                                    .start, // Aligns text at the star
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Icon(
                                 Icons.more_vert,
                                 color: Colors.grey.shade400,
                               ),
-                              Icon(
-                                Icons.favorite_outline,
-                                color: Colors.grey.shade400,
+                              IconButton(
+                                onPressed: () {
+                                  _saveFavorite(recipeId, recipe);
+                                },
+                                icon: Icon(
+                                  Icons.favorite_outline,
+                                  color: Colors.grey.shade400,
+                                ),
                               ),
                             ],
                           ),
