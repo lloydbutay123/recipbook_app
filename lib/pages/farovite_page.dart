@@ -78,11 +78,8 @@ class _FavoritesPageState extends State<FavoritePage> {
               },
               child: Card(
                 elevation: 0,
-                color: Colors.grey.shade300,
-                margin: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
+                color: Colors.grey.shade200,
+                margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(15),
                 ),

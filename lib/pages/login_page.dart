@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recepies_app/pages/home_page.dart';
@@ -32,7 +33,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _title() {
     return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.90,
+      width: MediaQuery.sizeOf(context).width * 0.95,
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -82,7 +83,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _loginForm() {
     return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.90,
+      width: MediaQuery.sizeOf(context).width * 0.95,
       height: MediaQuery.sizeOf(context).height * 0.30,
       child: Form(
         key: formKey,
@@ -156,6 +157,15 @@ class _LoginPageState extends State<LoginPage> {
             onTap: () async {
               final user = await authService.signInWithGoogle();
               if (user != null) {
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(user.uid)
+                    .set({
+                      "userId": user.uid,
+                      "name": user.displayName,
+                      "email": user.email,
+                      "createdAt": DateTime.now(),
+                    });
                 if (mounted) {
                   ScaffoldMessenger.of(
                     context,

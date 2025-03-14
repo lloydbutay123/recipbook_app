@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recepies_app/pages/login_page.dart';
@@ -12,6 +13,12 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+  final formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool isLoading = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(body: SafeArea(child: _buildUi()));
@@ -31,7 +38,7 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _title() {
     return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.90,
+      width: MediaQuery.sizeOf(context).width * 0.95,
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -46,12 +53,6 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  final formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool isLoading = false;
-
   Future<void> createUsernameWithEmailAndPassword() async {
     try {
       UserCredential userCredential = await FirebaseAuth.instance
@@ -63,7 +64,13 @@ class _SignupPageState extends State<SignupPage> {
       User? user = userCredential.user;
       if (user != null) {
         await user.updateDisplayName(_nameController.text.trim());
-        await user.reload();
+
+        await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+          "userId": user.uid,
+          "name": _nameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "createdAt": DateTime.now(),
+        });
       }
 
       if (mounted) {
@@ -90,7 +97,7 @@ class _SignupPageState extends State<SignupPage> {
 
   Widget _loginForm() {
     return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.90,
+      width: MediaQuery.sizeOf(context).width * 0.95,
       height: MediaQuery.sizeOf(context).height * 0.30,
       child: Form(
         key: formKey,

@@ -10,7 +10,6 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Settings'), centerTitle: true),
       body: ListView(
-        padding: const EdgeInsets.all(20.0),
         children: [
           ListTile(
             leading: Icon(Icons.person_outline),

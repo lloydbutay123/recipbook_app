@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recepies_app/pages/farovite_page.dart';
 import 'package:recepies_app/pages/landing_page.dart';
 import 'package:recepies_app/pages/profile/settings/settings_page.dart';
 
@@ -49,18 +50,21 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildUi() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(15),
-          ),
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [_profileInfo(), SizedBox(height: 20), _profileMenu()],
+    double screenWidth = MediaQuery.sizeOf(context).width;
+    return Center(
+      child: SizedBox(
+        width: screenWidth * 0.95,
+        child: SingleChildScrollView(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            padding: EdgeInsets.all(10),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [_profileInfo(), SizedBox(height: 20), _profileMenu()],
+            ),
           ),
         ),
       ),
@@ -96,12 +100,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _profileMenu() {
     return ListView(
-      physics: BouncingScrollPhysics(), // ✅ Allows smooth scrolling
-      shrinkWrap: true, // ✅ Prevents unnecessary height constraints
+      physics: BouncingScrollPhysics(),
+      shrinkWrap: true,
       children: [
         _buildMenuItem(Icons.wallet_outlined, "My Wallet", () {}),
         _buildMenuItem(Icons.notifications_outlined, "Notifications", () {}),
-        _buildMenuItem(Icons.favorite_outline, "My Favorites", () {}),
+        _buildMenuItem(Icons.favorite_outline, "My Favorites", () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => FavoritePage()),
+          );
+        }),
         _buildMenuItem(Icons.settings_outlined, "Settings", () {
           Navigator.push(
             context,
@@ -118,11 +127,11 @@ class _ProfilePageState extends State<ProfilePage> {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 15), // ✅ Adds spacing
+        padding: const EdgeInsets.only(bottom: 10),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.grey.shade300,
-            borderRadius: BorderRadius.circular(5),
+            borderRadius: BorderRadius.circular(15),
           ),
           padding: const EdgeInsets.all(20),
           child: Row(

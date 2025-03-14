@@ -127,7 +127,7 @@ class _ExplorePageState extends State<ExplorePage> {
       padding: const EdgeInsets.only(top: 20.0),
       child: SizedBox(
         height: MediaQuery.sizeOf(context).height * 0.06,
-        width: MediaQuery.sizeOf(context).width * 0.90,
+        width: MediaQuery.sizeOf(context).width * 0.95,
         child: ListView(
           scrollDirection: Axis.horizontal,
           children: [
