@@ -3,9 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:recepies_app/firebase_options.dart';
-import 'package:recepies_app/pages/home_page.dart';
+import 'package:recepies_app/pages/home/home_page.dart';
 import 'package:recepies_app/pages/landing_page.dart';
-import 'package:recepies_app/pages/login_page.dart';
+import 'package:recepies_app/pages/auth/login_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:recepies_app/pages/profile/settings/update_profile_page.dart';
-import 'package:recepies_app/pages/recipe_page.dart';
+import 'package:recepies_app/pages/browse/recipe_page.dart';
+import 'package:recepies_app/widgets/image_container.dart';
 
 class BrowseRecipesPage extends StatefulWidget {
   const BrowseRecipesPage({super.key});
@@ -172,6 +173,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
       width: MediaQuery.sizeOf(context).width * 0.95,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -192,6 +194,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   Widget _profileMenu() {
     User? user = FirebaseAuth.instance.currentUser;
     String? userName = user?.displayName;
+    String? photoUrl = user?.photoURL;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -217,11 +220,10 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                 children: [
                   ClipRRect(
                     borderRadius: const BorderRadius.all(Radius.circular(50)),
-                    child: Image.asset(
-                      "assets/images/johnlloyd.jpg",
-                      width: 50,
-                      height: 50,
-                      fit: BoxFit.cover,
+                    child: ImageContainer(
+                      imageUrl: photoUrl,
+                      width: 40,
+                      height: 40,
                     ),
                   ),
                   SizedBox(width: 10),
@@ -315,95 +317,96 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     double screenHeight = MediaQuery.sizeOf(context).height;
 
     return SizedBox(
-      height: screenHeight * 0.25,
       width: screenWidth * 0.95,
-      child: ListView.builder(
+      child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
-        itemCount: popularRecipes.length,
-        itemBuilder: (context, index) {
-          var recipe = popularRecipes[index];
+        child: Wrap(
+          spacing: 10,
+          children: List.generate(popularRecipes.length, (index) {
+            var recipe = popularRecipes[index];
 
-          return GestureDetector(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => RecipePage(recipe: recipe),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.only(right: 10),
-              width: screenWidth * 0.37,
+            return GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipePage(recipe: recipe),
+                  ),
+                );
+              },
               child: Container(
+                width: screenWidth * 0.37,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: Container(
-                  padding: EdgeInsets.only(bottom: 5),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: Image.network(
-                          recipe['image'],
-                          width: screenWidth * 0.37,
-                          height: screenHeight * 0.16,
-                          fit: BoxFit.cover,
-                        ),
+                padding: const EdgeInsets.only(bottom: 5),
+                child: Column(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(15),
+                      child: Image.network(
+                        recipe['image'],
+                        width: screenWidth * 0.37,
+                        height: screenHeight * 0.16,
+                        fit: BoxFit.cover,
                       ),
-                      const SizedBox(height: 5),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: SizedBox(
-                          width: screenWidth,
-                          height: screenHeight * 0.07,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                    const SizedBox(height: 5),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 40,
+                            alignment: Alignment.topLeft,
+                            child: Text(
+                              recipe['name'],
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
                             children: [
                               Text(
-                                recipe['name'],
+                                "${recipe['cookTimeMinutes']} mins",
                                 style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                              Row(
-                                children: [
-                                  Text(
-                                    "${recipe['cookTimeMinutes']} mins",
-                                    style: const TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  Icon(Icons.star, color: Colors.yellow),
-                                  Text(
-                                    "${recipe['rating']}",
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ],
+                              const SizedBox(width: 5),
+                              const Icon(
+                                Icons.star,
+                                color: Colors.yellow,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 2),
+                              Text(
+                                "${recipe['rating']}",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey,
+                                ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          );
-        },
+            );
+          }),
+        ),
       ),
     );
   }

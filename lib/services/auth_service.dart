@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Future<User?> signInWithGoogle() async {
     try {
@@ -23,7 +25,23 @@ class AuthService {
         credential,
       );
 
-      return userCredential.user;
+      final User? user = userCredential.user;
+      if (user != null) {
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(user.uid).get();
+        if (!userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'name': user.displayName ?? "Google User",
+            'email': user.email,
+            'photoUrl': user.photoURL ?? "",
+            'createdAt': FieldValue.serverTimestamp(),
+            'signInMethod': "google",
+          });
+        }
+      }
+
+      return user;
     } catch (e) {
       print("Google Sign-In Error: $e");
       return null;

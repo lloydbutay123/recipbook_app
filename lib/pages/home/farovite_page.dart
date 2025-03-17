@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recepies_app/pages/recipe_page.dart';
+import 'package:recepies_app/pages/browse/recipe_page.dart';
 
 class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});

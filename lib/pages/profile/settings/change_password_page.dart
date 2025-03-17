@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recepies_app/widgets/custom_input_field.dart';
 
 class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
@@ -79,34 +80,17 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 40),
-            Text("Current Password"),
-            TextFormField(
+            CustomInputField(
+              label: "Current Password",
               controller: _currentPasswordController,
+              errorMessage: "Please enter your current password",
               obscureText: true,
-              decoration: InputDecoration(
-                border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 2.5),
-                ),
-                hintText: "Enter your current password",
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
-                ),
-              ),
             ),
-            SizedBox(height: 30),
-            Text("New Password"),
-            TextFormField(
+            CustomInputField(
+              label: "New Password",
               controller: _newPasswordController,
+              errorMessage: "Please enter your new password",
               obscureText: true,
-              decoration: InputDecoration(
-                border: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey, width: 2.5),
-                ),
-                hintText: "Enter your new password",
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
-                ),
-              ),
             ),
             SizedBox(height: 40),
             _changePasswordButton(),

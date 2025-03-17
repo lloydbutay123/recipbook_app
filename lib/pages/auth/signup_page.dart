@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recepies_app/pages/login_page.dart';
+import 'package:recepies_app/pages/auth/login_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -98,7 +98,6 @@ class _SignupPageState extends State<SignupPage> {
   Widget _loginForm() {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width * 0.95,
-      height: MediaQuery.sizeOf(context).height * 0.30,
       child: Form(
         key: formKey,
         child: Column(
@@ -119,6 +118,7 @@ class _SignupPageState extends State<SignupPage> {
                 hintText: "Enter your Name",
               ),
             ),
+            SizedBox(height: 10),
             TextFormField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
@@ -132,6 +132,7 @@ class _SignupPageState extends State<SignupPage> {
                 hintText: "Enter Email Address",
               ),
             ),
+            SizedBox(height: 10),
             TextFormField(
               controller: _passwordController,
               keyboardType: TextInputType.text,
@@ -146,6 +147,7 @@ class _SignupPageState extends State<SignupPage> {
                 hintText: "Enter Password",
               ),
             ),
+            SizedBox(height: 10),
             _loginButton(),
             _goToLogin(),
           ],

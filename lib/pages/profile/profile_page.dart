@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recepies_app/pages/farovite_page.dart';
+import 'package:recepies_app/pages/home/farovite_page.dart';
 import 'package:recepies_app/pages/landing_page.dart';
 import 'package:recepies_app/pages/profile/settings/settings_page.dart';
+import 'package:recepies_app/widgets/image_container.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -60,7 +61,7 @@ class _ProfilePageState extends State<ProfilePage> {
               color: Colors.grey.shade200,
               borderRadius: BorderRadius.circular(15),
             ),
-            padding: EdgeInsets.all(10),
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 40),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [_profileInfo(), SizedBox(height: 20), _profileMenu()],
@@ -75,17 +76,13 @@ class _ProfilePageState extends State<ProfilePage> {
     User? user = FirebaseAuth.instance.currentUser;
     String? userName = user?.displayName;
     String? userEmail = user?.email;
+    String? photoURL = user?.photoURL;
 
     return Column(
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.all(Radius.circular(50)),
-          child: Image.asset(
-            "assets/images/johnlloyd.jpg",
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-          ),
+          child: ImageContainer(imageUrl: photoURL, width: 50, height: 50),
         ),
         SizedBox(height: 5),
         Text(
@@ -111,6 +108,7 @@ class _ProfilePageState extends State<ProfilePage> {
             MaterialPageRoute(builder: (context) => FavoritePage()),
           );
         }),
+        Divider(thickness: 2, color: Colors.grey.shade300),
         _buildMenuItem(Icons.settings_outlined, "Settings", () {
           Navigator.push(
             context,
@@ -127,7 +125,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.only(bottom: 7, top: 7),
         child: Container(
           decoration: BoxDecoration(
             color: Colors.grey.shade300,

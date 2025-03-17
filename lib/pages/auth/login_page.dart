@@ -1,7 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:recepies_app/pages/home_page.dart';
+import 'package:recepies_app/pages/auth/forgot_password_page.dart';
+import 'package:recepies_app/pages/home/home_page.dart';
+import 'package:recepies_app/pages/auth/signup_page.dart';
 import 'package:recepies_app/services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
@@ -84,12 +85,10 @@ class _LoginPageState extends State<LoginPage> {
   Widget _loginForm() {
     return SizedBox(
       width: MediaQuery.sizeOf(context).width * 0.95,
-      height: MediaQuery.sizeOf(context).height * 0.30,
       child: Form(
         key: formKey,
         child: Column(
           mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextFormField(
               controller: _emailController,
@@ -104,23 +103,58 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: "Enter Email Address",
               ),
             ),
-            TextFormField(
-              controller: _passwordController,
-              keyboardType: TextInputType.text,
-              obscureText: true,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15), // Rounded border
-                  borderSide: BorderSide(color: Colors.grey, width: 1),
+            SizedBox(height: 10),
+            Stack(
+              children: [
+                TextFormField(
+                  controller: _passwordController,
+                  keyboardType: TextInputType.text,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15), // Rounded border
+                      borderSide: BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    labelStyle: const TextStyle(color: Colors.black),
+                    labelText: "Password",
+                    hintText: "Enter Password",
+                  ),
                 ),
-                labelStyle: const TextStyle(color: Colors.black),
-                labelText: "Password",
-                hintText: "Enter Password",
-              ),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ForgotPasswordPage(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        "Forgot?",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: 10),
             _loginButton(),
+            SizedBox(height: 40),
             Text("Sign up with"),
+            SizedBox(height: 10),
             _signInScreen(),
+            SizedBox(height: 40),
+            _signupButton(),
           ],
         ),
       ),
@@ -147,6 +181,28 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  Widget _signupButton() {
+    return SizedBox(
+      width: MediaQuery.sizeOf(context).width * 0.95,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text("Dont have an account?"),
+          TextButton(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const SignupPage()),
+              );
+            },
+            child: Text("Create now"),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _signInScreen() {
     final AuthService authService = AuthService();
     return Center(
@@ -157,19 +213,10 @@ class _LoginPageState extends State<LoginPage> {
             onTap: () async {
               final user = await authService.signInWithGoogle();
               if (user != null) {
-                await FirebaseFirestore.instance
-                    .collection("users")
-                    .doc(user.uid)
-                    .set({
-                      "userId": user.uid,
-                      "name": user.displayName,
-                      "email": user.email,
-                      "createdAt": DateTime.now(),
-                    });
                 if (mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text("Login successful!")));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Login successful!")),
+                  );
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => HomePage()),
