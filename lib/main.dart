@@ -44,7 +44,6 @@ class MyApp extends StatelessWidget {
           primary: const Color(0xFFFF5722), // Appetizing Orange
           secondary: const Color(0xFF4CAF50), // Fresh Green
           tertiary: const Color(0xFFFFC107), // Lemon Yellow
-          background: const Color(0xFFFAF3E0), // Soft Warm Beige
           surface: Colors.white, // Card surfaces
           error: Colors.redAccent,
           onPrimary: Colors.white, // Text on primary color

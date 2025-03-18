@@ -32,8 +32,8 @@ class _LandingPageState extends State<LandingPage> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.white.withOpacity(0), // Transparent at top
-                    Colors.white.withOpacity(0.9),
+                    Colors.white.withAlpha(0),
+                    Colors.white.withAlpha((255 * 0.9).toInt()),
                     Colors.white, // Fully white at bottom
                   ],
                   begin: Alignment.topCenter,

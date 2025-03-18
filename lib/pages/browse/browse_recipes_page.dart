@@ -3,9 +3,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:recepies_app/pages/profile/settings/update_profile_page.dart';
+import 'package:recepies_app/pages/browse/browse_restaurant.dart';
+import 'package:recepies_app/pages/browse/restaurant_details.dart';
+import 'package:recepies_app/pages/home/explore_page.dart';
+import 'package:recepies_app/pages/home/home_page.dart';
 import 'package:recepies_app/pages/browse/recipe_page.dart';
-import 'package:recepies_app/widgets/image_container.dart';
+import 'package:recepies_app/widgets/profile_header.dart';
+import 'package:recepies_app/widgets/section_title.dart';
 
 class BrowseRecipesPage extends StatefulWidget {
   const BrowseRecipesPage({super.key});
@@ -30,6 +34,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     _loadFavorites();
     fetchMostPopularRecipes();
     fetchData("all");
+    fetchRecommendedRestaurants();
   }
 
   void _loadFavorites() async {
@@ -47,7 +52,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
         favoriteRecipeIds = snapshot.docs.map((doc) => doc.id).toSet();
       });
     } catch (e) {
-      print("Error loading favorites: $e");
+      // Handle error
     }
   }
 
@@ -73,7 +78,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
         }
       });
     } catch (e) {
-      print("Error updating favorite: $e");
+      // Handle error
     }
   }
 
@@ -81,6 +86,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     if (hasFetchedPopular) return;
     hasFetchedPopular = true;
 
+    if (!mounted) return;
     setState(() {
       isPopularLoading = true;
     });
@@ -100,15 +106,63 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
         mostPopularRecipes = mostPopularRecipes.take(10).toList();
       });
     } catch (e) {
-      print("Error fetching popular recipes $e");
+      // Handle error
     } finally {
-      setState(() {
+      if (!mounted) {
         isPopularLoading = false;
-      });
+      } else {
+        setState(() {
+          isPopularLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchRecommendedRestaurants() async {
+    try {
+      QuerySnapshot restaurantSnapshot =
+          await FirebaseFirestore.instance.collection('restaurants').get();
+
+      List<Map<String, dynamic>> recommendedRestaurants = [];
+
+      for (var doc in restaurantSnapshot.docs) {
+        String restaurantId = doc.id;
+
+        QuerySnapshot reviewsSnapshot =
+            await FirebaseFirestore.instance
+                .collection('restaurants')
+                .doc(restaurantId)
+                .collection('reviews')
+                .get();
+
+        double totalRating = 0;
+        int reviewCount = reviewsSnapshot.docs.length;
+
+        for (var review in reviewsSnapshot.docs) {
+          totalRating += (review['rating'] as num).toDouble();
+        }
+
+        double averageRating =
+            reviewCount > 0 ? totalRating / reviewCount : 0.0;
+
+        Map<String, dynamic> restaurantData =
+            doc.data() as Map<String, dynamic>;
+        restaurantData['averageRating'] = averageRating;
+
+        recommendedRestaurants.add(restaurantData);
+      }
+      recommendedRestaurants.sort(
+        (a, b) => b['averageRating'].compareTo(a['averageRating']),
+      );
+
+      return recommendedRestaurants;
+    } catch (e) {
+      return [];
     }
   }
 
   Future<void> fetchData(String mealType) async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
@@ -119,7 +173,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
 
       setState(() {
         if (mealType == "all") {
-          data = jsonData['recipes'];
+          data = jsonData['recipes'].take(10).toList();
         } else {
           data =
               jsonData['recipes']
@@ -128,15 +182,20 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                         .map((type) => type.toLowerCase())
                         .contains(mealType.toLowerCase()),
                   )
+                  .take(10)
                   .toList();
         }
       });
     } catch (e) {
-      print("Error fetching data: $e");
+      // Handle error
     } finally {
-      setState(() {
+      if (!mounted) {
         isLoading = false;
-      });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 
@@ -148,160 +207,42 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   Widget _buildUi() {
     return Column(
       children: [
-        _profileMenu(),
+        ProfileHeader(),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
               children: [
-                _sectionTitle("Most popular"),
+                SectionTitle(title: "Most popular", onTap: () {}),
                 _popularRecipesList(),
                 const SizedBox(height: 20),
-                _sectionTitle("Choose your food"),
-                _recipeTypeButtons(),
-                const SizedBox(height: 10),
+                SectionTitle(
+                  title: "Restaurants you may like",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => BrowseRestaurant(),
+                      ),
+                    );
+                  },
+                ),
+                _recommendedRestaurants(),
+                const SizedBox(height: 20),
+                SectionTitle(
+                  title: "Choose your food",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ExplorePage()),
+                    );
+                  },
+                ),
                 _recipeList(),
               ],
             ),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _sectionTitle(String title) {
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          TextButton(
-            onPressed: () {},
-            child: Text(
-              "See all",
-              style: TextStyle(color: Colors.grey.shade500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _profileMenu() {
-    User? user = FirebaseAuth.instance.currentUser;
-    String? userName = user?.displayName;
-    String? photoUrl = user?.photoURL;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: SizedBox(
-        width: MediaQuery.sizeOf(context).width * 0.95,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => UpdateProfilePage()),
-                ).then((updatedName) {
-                  if (updatedName != null) {
-                    setState(() {
-                      userName = updatedName;
-                    });
-                  }
-                });
-              },
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.all(Radius.circular(50)),
-                    child: ImageContainer(
-                      imageUrl: photoUrl,
-                      width: 40,
-                      height: 40,
-                    ),
-                  ),
-                  SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Hello 👋",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "$userName",
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Row(
-              children: [
-                IconButton(icon: const Icon(Icons.search), onPressed: () {}),
-                IconButton(
-                  icon: const Icon(Icons.filter_list),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _recipeTypeButtons() {
-    return SizedBox(
-      height: MediaQuery.sizeOf(context).height * 0.06,
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: [
-          _buildMealButton("all", "🍽️ All"),
-          _buildMealButton("snack", "🍿 Snack"),
-          _buildMealButton("breakfast", "🍳 Breakfast"),
-          _buildMealButton("lunch", "🍗 Lunch"),
-          _buildMealButton("dinner", "🍽️ Dinner"),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMealButton(String mealType, String label) {
-    bool isSelected = selectedMealType == mealType;
-    return Padding(
-      padding: const EdgeInsets.only(right: 5),
-      child: FilledButton(
-        onPressed: () {
-          setState(() {
-            selectedMealType = mealType;
-          });
-          fetchData(mealType);
-        },
-        style: FilledButton.styleFrom(
-          backgroundColor:
-              isSelected ? Colors.orangeAccent : Colors.grey.shade200,
-          foregroundColor: isSelected ? Colors.white : Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(15)),
-          ),
-        ),
-        child: Text(label),
-      ),
     );
   }
 
@@ -408,6 +349,114 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
           }),
         ),
       ),
+    );
+  }
+
+  Widget _recommendedRestaurants() {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: fetchRecommendedRestaurants(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(child: Text("No recommended restaurants found."));
+        }
+
+        List<Map<String, dynamic>> recommendedRestaurants =
+            snapshot.data!.take(5).toList();
+        double screenWidth = MediaQuery.sizeOf(context).width;
+        double screenHeight = MediaQuery.sizeOf(context).height;
+
+        return SizedBox(
+          width: screenWidth * 0.95,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Wrap(
+              spacing: 10,
+              children: List.generate(recommendedRestaurants.length, (index) {
+                var restaurant = recommendedRestaurants[index];
+
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                RestaurantDetails(restaurant: restaurant),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: screenWidth * 0.37,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Column(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(15),
+                          child: Image.network(
+                            restaurant['photoUrl'],
+                            width: screenWidth * 0.37,
+                            height: screenHeight * 0.16,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Column(
+                            children: [
+                              Container(
+                                height: 40,
+                                alignment: Alignment.topLeft,
+                                child: Text(
+                                  restaurant['name'],
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.star,
+                                    color: Colors.yellow,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    restaurant['averageRating'].toStringAsFixed(
+                                      1,
+                                    ),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        );
+      },
     );
   }
 

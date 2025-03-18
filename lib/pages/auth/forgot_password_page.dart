@@ -49,12 +49,14 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password reset email sent! Check your inbox."),
-        ),
-      );
-      Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Password reset email sent! Check your inbox."),
+          ),
+        );
+        Navigator.pop(context);
+      }
     } on FirebaseAuthException catch (e) {
       String errorMessage = "An error occurred";
 
@@ -68,9 +70,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         errorMessage = "Error: ${e.message}";
       }
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
+      }
     } finally {
       setState(() {
         isLoading = false;

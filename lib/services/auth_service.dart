@@ -43,7 +43,6 @@ class AuthService {
 
       return user;
     } catch (e) {
-      print("Google Sign-In Error: $e");
       return null;
     }
   }
@@ -61,11 +60,9 @@ class AuthService {
             .signInWithCredential(credential);
 
         return userCredential.user;
-      } else {
-        print("Facebook Login Failed: ${result.status}");
-      }
+      } else {}
     } catch (e) {
-      print("Facebook Login Error: $e");
+      // Handle error
     }
     return null;
   }

@@ -48,11 +48,9 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           _dobController.text =
               userData?.containsKey('dob') == true ? userData!['dob'] : "";
         });
-
-        print("Updated user data loaded from Firestore.");
       }
     } catch (e) {
-      print("Error loading user data: $e");
+      // Handle error
     }
   }
 
@@ -240,20 +238,23 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       await user?.delete();
 
       await FirebaseAuth.instance.signOut();
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Account deleted successfully!")));
-      Navigator.pushReplacementNamed(context, "/login");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Account deleted successfully!")),
+        );
+        Navigator.pushReplacementNamed(context, "/login");
+      }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "You need to log in again before deleting your account.",
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "You need to log in again before deleting your account.",
+              ),
             ),
-          ),
-        );
+          );
+        }
       }
     }
   }

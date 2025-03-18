@@ -127,13 +127,17 @@ class _FavoritesPageState extends State<FavoritePage> {
 
     try {
       await favoritesRef.doc(recipeId).delete();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Removed from favorites")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Removed from favorites")));
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Failed to remove favorite: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to remove favorite: $e")),
+        );
+      }
     }
   }
 }

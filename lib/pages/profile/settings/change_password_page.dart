@@ -55,15 +55,19 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
       await user.updatePassword(_newPasswordController.text.trim());
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Password changed successfully!")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Password changed successfully!")),
+        );
 
-      Navigator.pop(context);
+        Navigator.pop(context);
+      }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Error: ${e.message}")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error: ${e.message}")));
+      }
     } finally {
       setState(() {
         isLoading = false;

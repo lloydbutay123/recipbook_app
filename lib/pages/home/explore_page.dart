@@ -16,16 +16,20 @@ class _ExplorePageState extends State<ExplorePage> {
   final String url = "https://dummyjson.com/recipes";
   List<dynamic> data = [];
   bool isLoading = true;
+  bool isPopularLoading = true;
   String selectedMealType = 'all';
   Set<String> favoriteRecipeIds = {};
+  List<dynamic> mostPopularRecipes = [];
+  bool hasFetchedPopular = false;
 
   @override
   void initState() {
     super.initState();
+    _loadFavorites();
     fetchData("all");
   }
 
-  void _saveFavorite(String recipeId, Map<String, dynamic> recipe) async {
+  void _loadFavorites() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -35,21 +39,111 @@ class _ExplorePageState extends State<ExplorePage> {
         .collection('favorites');
 
     try {
-      await favoritesRef.doc(recipeId).set(recipe);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Recipe added to favorites.")),
-      );
+      QuerySnapshot snapshot = await favoritesRef.get();
+      setState(() {
+        favoriteRecipeIds = snapshot.docs.map((doc) => doc.id).toSet();
+      });
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to add recipe to favorites: $e")),
-      );
+      // Handle error
     }
   }
 
-  // Fetch data based on selected meal type
+  void _toggleFavorite(String recipeId, Map<String, dynamic> recipe) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final favoritesRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('favorites');
+
+    try {
+      DocumentSnapshot docSnapshot = await favoritesRef.doc(recipeId).get();
+
+      setState(() {
+        if (docSnapshot.exists) {
+          favoritesRef.doc(recipeId).delete();
+          favoriteRecipeIds.remove(recipeId);
+        } else {
+          favoritesRef.doc(recipeId).set(recipe);
+          favoriteRecipeIds.add(recipeId);
+        }
+      });
+    } catch (e) {
+      // Handle error
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("Explore Foods")),
+      body: SafeArea(child: _buildUi()),
+    );
+  }
+
+  Widget _buildUi() {
+    return Column(
+      children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
+                _recipeTypeButtons(),
+                const SizedBox(height: 10),
+                _recipeList(),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _recipeTypeButtons() {
+    return SizedBox(
+      height: MediaQuery.sizeOf(context).height * 0.06,
+      width: MediaQuery.sizeOf(context).width * 0.95,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: [
+          _buildMealButton("all", "🍽️ All"),
+          _buildMealButton("snack", "🍿 Snack"),
+          _buildMealButton("breakfast", "🍳 Breakfast"),
+          _buildMealButton("lunch", "🍗 Lunch"),
+          _buildMealButton("dinner", "🍽️ Dinner"),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMealButton(String mealType, String label) {
+    bool isSelected = selectedMealType == mealType;
+    return Padding(
+      padding: const EdgeInsets.only(right: 5),
+      child: FilledButton(
+        onPressed: () {
+          setState(() {
+            selectedMealType = mealType;
+          });
+          fetchData(mealType);
+        },
+        style: FilledButton.styleFrom(
+          backgroundColor:
+              isSelected ? Colors.orangeAccent : Colors.grey.shade200,
+          foregroundColor: isSelected ? Colors.white : Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(15)),
+          ),
+        ),
+        child: Text(label),
+      ),
+    );
+  }
+
   Future<void> fetchData(String mealType) async {
+    if (!mounted) return;
     setState(() {
       isLoading = true;
     });
@@ -73,115 +167,38 @@ class _ExplorePageState extends State<ExplorePage> {
         }
       });
     } catch (e) {
-      print("Error fetching data: $e");
+      // Handle error
     } finally {
-      setState(() {
+      if (!mounted) {
         isLoading = false;
-      });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "Explore Food",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.grey.shade100,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context);
-          },
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: IconButton(
-              onPressed: () {},
-              icon: Icon(Icons.more_horiz_sharp, size: 24),
-            ),
-          ),
-        ],
-      ),
-
-      body: SafeArea(child: _buildUi()),
-    );
-  }
-
-  Widget _buildUi() {
-    return Column(
-      children: [
-        _recipeTypeButtons(),
-        const SizedBox(height: 10),
-        Expanded(child: _recipeList()),
-      ],
-    );
-  }
-
-  Widget _recipeTypeButtons() {
-    return Padding(
-      padding: const EdgeInsets.only(top: 20.0),
-      child: SizedBox(
-        height: MediaQuery.sizeOf(context).height * 0.06,
-        width: MediaQuery.sizeOf(context).width * 0.95,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          children: [
-            _buildMealButton("all", "🍽️ All"),
-            _buildMealButton("snack", "🍿 Snack"),
-            _buildMealButton("breakfast", "🍳 Breakfast"),
-            _buildMealButton("lunch", "🍗 Lunch"),
-            _buildMealButton("dinner", "🍽️ Dinner"),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Function to create filter buttons dynamically
-  Widget _buildMealButton(String mealType, String label) {
-    bool isSelected = selectedMealType == mealType;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 5.0),
-      child: FilledButton(
-        onPressed: () {
-          setState(() {
-            selectedMealType = mealType;
-          });
-          fetchData(mealType); // Fetch filtered data
-        },
-        style: FilledButton.styleFrom(
-          backgroundColor: isSelected ? Colors.orangeAccent : Colors.white,
-          foregroundColor: isSelected ? Colors.white : Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(15)),
-          ),
-        ),
-        child: Text(label),
-      ),
-    );
   }
 
   Widget _recipeList() {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      ); // Show loading indicator
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (data.isEmpty) {
       return const Center(child: Text("No recipes found for this category."));
     }
 
+    double screenWidth = MediaQuery.sizeOf(context).width;
+    double screenHeight = MediaQuery.sizeOf(context).height;
+
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemCount: data.length,
       itemBuilder: (context, index) {
         var recipe = data[index];
         String recipeId = recipe['id'].toString();
+        bool isFavorite = favoriteRecipeIds.contains(recipeId);
 
         return GestureDetector(
           onTap: () {
@@ -193,11 +210,11 @@ class _ExplorePageState extends State<ExplorePage> {
             );
           },
           child: SizedBox(
-            height: 150, // Fixed height for the card
+            height: screenHeight * 0.18,
             child: Card(
-              elevation: 0, // Removes shadow
+              elevation: 0,
               color: Colors.white,
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(15),
               ),
@@ -210,9 +227,9 @@ class _ExplorePageState extends State<ExplorePage> {
                       borderRadius: const BorderRadius.all(Radius.circular(15)),
                       child: Image.network(
                         recipe['image'],
-                        width: MediaQuery.sizeOf(context).width * 0.35,
-                        height: double.infinity, // Full height of SizedBox
-                        fit: BoxFit.cover, // Ensures the image fills its space
+                        width: screenWidth * 0.35,
+                        height: screenHeight * 0.16,
+                        fit: BoxFit.cover,
                       ),
                     ),
                   ),
@@ -225,14 +242,10 @@ class _ExplorePageState extends State<ExplorePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width: MediaQuery.sizeOf(context).width * 0.35,
+                            width: MediaQuery.sizeOf(context).width * 0.30,
                             child: Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment
-                                      .center, // Centers vertically
-                              crossAxisAlignment:
-                                  CrossAxisAlignment
-                                      .start, // Aligns text at the start
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   recipe['name'],
@@ -240,18 +253,17 @@ class _ExplorePageState extends State<ExplorePage> {
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
-                                  maxLines: 1,
+                                  maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "Category: ${recipe['mealType'].join(", ")}",
+                                  "Calories: ${recipe['caloriesPerServing']}",
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey,
                                   ),
                                   maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
@@ -268,17 +280,25 @@ class _ExplorePageState extends State<ExplorePage> {
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                Icons.more_vert,
-                                color: Colors.grey.shade400,
+                              IconButton(
+                                icon: Icon(
+                                  Icons.more_vert,
+                                  color: Colors.grey.shade400,
+                                ),
+                                onPressed: () {},
                               ),
                               IconButton(
                                 onPressed: () {
-                                  _saveFavorite(recipeId, recipe);
+                                  _toggleFavorite(recipeId, recipe);
                                 },
                                 icon: Icon(
-                                  Icons.favorite_outline,
-                                  color: Colors.grey.shade400,
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color:
+                                      isFavorite
+                                          ? Colors.red
+                                          : Colors.grey.shade400,
                                 ),
                               ),
                             ],
