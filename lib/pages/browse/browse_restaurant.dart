@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:recepies_app/pages/home/home_page.dart';
+import 'package:recepies_app/pages/browse/restaurant_details.dart';
 
 class BrowseRestaurant extends StatefulWidget {
   const BrowseRestaurant({super.key});
@@ -120,7 +120,9 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => HomePage()),
+              MaterialPageRoute(
+                builder: (context) => RestaurantDetails(restaurant: restaurant),
+              ),
             );
           },
           child: SizedBox(
@@ -134,7 +136,6 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
               ),
               child: Row(
                 children: [
-                  // Restaurant Image
                   Padding(
                     padding: const EdgeInsets.all(5.0),
                     child: ClipRRect(
@@ -155,7 +156,6 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
                       ),
                     ),
                   ),
-                  // Restaurant Details
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -164,13 +164,13 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width: screenWidth * 0.30,
+                            width: screenWidth * 0.50,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  restaurant['name'],
+                                  '${restaurant['name']} - ${restaurant['address']}',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -185,11 +185,11 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
                                     const Icon(
                                       Icons.star,
                                       color: Colors.yellow,
-                                      size: 16,
+                                      size: 24,
                                     ),
                                     const SizedBox(width: 5),
                                     Text(
-                                      "${restaurant['averageRating']?.toStringAsFixed(1) ?? 'N/A'} ⭐",
+                                      "${restaurant['averageRating']?.toStringAsFixed(1) ?? 'N/A'}",
                                       style: const TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,

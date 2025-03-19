@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:recepies_app/widgets/custom_input_field.dart';
 import 'package:recepies_app/widgets/image_container.dart';
+import 'package:recepies_app/widgets/image_picker.dart';
 
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({super.key});
@@ -16,9 +21,12 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
+  final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool isLoading = false;
+  File? _selectedImage;
+  String? _imageUrl;
 
   @override
   void initState() {
@@ -75,6 +83,17 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     );
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
   Future<void> _updateProfile() async {
     if (!formKey.currentState!.validate()) return;
 
@@ -89,24 +108,44 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     }
 
     try {
+      String? downloadUrl;
+      if (_selectedImage != null) {
+        Reference ref = _storage.ref().child(
+          "profile_pictures/${user.uid}/profile.jpg",
+        );
+        UploadTask uploadTask = ref.putFile(_selectedImage!);
+        TaskSnapshot snapshot = await uploadTask;
+        downloadUrl = await snapshot.ref.getDownloadURL();
+      }
+
       await user.updateDisplayName(_nameController.text);
       await user.reload();
 
       final userRef = _firestore.collection('users').doc(user.uid);
 
-      await userRef.update({
+      Map<String, dynamic> updatedData = {
         'name': _nameController.text,
         'phone': _phoneController.text,
         'dob': _dobController.text,
-      });
+      };
+
+      if (downloadUrl != null) {
+        updatedData['photoUrl'] = downloadUrl;
+        await user.updatePhotoURL(downloadUrl);
+      }
+
+      await userRef.update(updatedData);
 
       if (mounted) {
         setState(() {
+          _imageUrl = downloadUrl ?? _imageUrl;
           isLoading = false;
         });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Profile updated successfully!")),
         );
+
         Navigator.pop(context);
       }
     } catch (e) {
@@ -124,7 +163,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
 
   Widget _updateProfileForm() {
     User? user = FirebaseAuth.instance.currentUser;
-    String? photoUrl = user?.photoURL;
+    String? firebasePhotoUrl = user?.photoURL;
 
     return SizedBox(
       width: MediaQuery.sizeOf(context).width * 0.95,
@@ -139,11 +178,20 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                 children: [
                   ClipRRect(
                     borderRadius: BorderRadius.all(Radius.circular(100)),
-                    child: ImageContainer(
-                      imageUrl: photoUrl,
-                      width: 120,
-                      height: 120,
-                    ),
+                    child:
+                        _selectedImage != null
+                            ? Image.file(
+                              _selectedImage!, // ✅ Show selected image instantly
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            )
+                            : ImageContainer(
+                              imageUrl:
+                                  firebasePhotoUrl, // ✅ Show Firebase image if no selection
+                              width: 120,
+                              height: 120,
+                            ),
                   ),
                   Positioned(
                     right: 0,
@@ -157,7 +205,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          onPressed: () {},
+                          onPressed:
+                              _pickImage, // ✅ Select Image (but don't upload yet)
                           icon: Icon(
                             Icons.camera_alt,
                             size: 20,
@@ -206,23 +255,31 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       height: 60,
       width: MediaQuery.sizeOf(context).width * 0.95,
       child: ElevatedButton(
-        onPressed: () async {
-          await _updateProfile();
-        },
+        onPressed:
+            isLoading
+                ? null
+                : () async {
+                  await _updateProfile();
+                },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orangeAccent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
         ),
-        child: Text(
-          "Update Profile".toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        child:
+            isLoading
+                ? const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                )
+                : Text(
+                  "Update Profile".toUpperCase(),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
       ),
     );
   }

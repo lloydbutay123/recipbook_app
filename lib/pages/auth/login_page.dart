@@ -225,7 +225,7 @@ class _LoginPageState extends State<LoginPage> {
               }
             },
             child: Image.asset(
-              "assets/images/google.png",
+              "assets/images/google.webp",
               width: 30,
               height: 30,
             ),
@@ -247,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
               }
             },
             child: Image.asset(
-              "assets/images/facebook.png",
+              "assets/images/facebook.webp",
               width: 30,
               height: 30,
             ),
@@ -269,7 +269,7 @@ class _LoginPageState extends State<LoginPage> {
               }
             },
             child: Image.asset(
-              "assets/images/twitter.png",
+              "assets/images/twitter.webp",
               width: 30,
               height: 30,
             ),

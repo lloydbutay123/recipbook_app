@@ -49,22 +49,39 @@ class AuthService {
 
   Future<User?> signInWithFacebook() async {
     try {
-      final LoginResult result = await FacebookAuth.instance.login();
+      print("Starting Facebook login...");
+      final LoginResult result = await FacebookAuth.instance.login(
+        permissions: ['email', 'public_profile'],
+      );
+
+      print("Facebook login status: ${result.status}");
 
       if (result.status == LoginStatus.success) {
-        final AccessToken accessToken = result.accessToken!;
-        final AuthCredential credential = FacebookAuthProvider.credential(
+        final AccessToken? accessToken = result.accessToken;
+        if (accessToken == null) {
+          print("Facebook login failed: AccessToken is null.");
+          return null;
+        }
+
+        print("Facebook Access Token: ${accessToken.tokenString}");
+
+        final OAuthCredential credential = FacebookAuthProvider.credential(
           accessToken.tokenString,
         );
+
         final UserCredential userCredential = await FirebaseAuth.instance
             .signInWithCredential(credential);
 
-        return userCredential.user;
-      } else {}
+        final User? user = userCredential.user;
+        return user;
+      } else {
+        print("Facebook login failed: ${result.message}");
+        return null;
+      }
     } catch (e) {
-      // Handle error
+      print("Error during Facebook login: $e");
+      return null;
     }
-    return null;
   }
 
   Future<void> signOut() async {

@@ -16,7 +16,7 @@ class _LandingPageState extends State<LandingPage> {
         children: [
           // Background Image
           Positioned.fill(
-            child: Image.asset("assets/images/landing.png", fit: BoxFit.cover),
+            child: Image.asset("assets/images/landing.webp", fit: BoxFit.cover),
           ),
           // White Container with Fading Effect for Texts
           Align(

@@ -53,6 +53,5 @@ class _SectionTitleState extends State<SectionTitle> {
         ],
       ),
     );
-    ;
   }
 }

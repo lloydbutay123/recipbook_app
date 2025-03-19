@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:recepies_app/pages/browse/browse_restaurant.dart';
 import 'package:recepies_app/pages/browse/restaurant_details.dart';
 import 'package:recepies_app/pages/home/explore_page.dart';
-import 'package:recepies_app/pages/home/home_page.dart';
 import 'package:recepies_app/pages/browse/recipe_page.dart';
 import 'package:recepies_app/widgets/profile_header.dart';
 import 'package:recepies_app/widgets/section_title.dart';
@@ -415,7 +414,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                                 height: 40,
                                 alignment: Alignment.topLeft,
                                 child: Text(
-                                  restaurant['name'],
+                                  '${restaurant['name']} - ${restaurant['address']}',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -424,6 +423,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              SizedBox(height: 5),
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [

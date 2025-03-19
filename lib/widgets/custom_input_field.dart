@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// A globally reusable input field widget
 class CustomInputField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
