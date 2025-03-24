@@ -12,13 +12,16 @@ class RestaurantDetails extends StatefulWidget {
 }
 
 class _RestaurantDetailsState extends State<RestaurantDetails> {
-  List<dynamic> data = [];
-  bool isLoading = true;
+  List<dynamic> reviewData = [];
+  List<dynamic> menuData = [];
+  bool isReviewLoading = true;
+  bool isMenuLoading = true;
 
   @override
   void initState() {
     super.initState();
     fetchReviews(widget.restaurant['restaurantId']);
+    fetchMenu(widget.restaurant['restaurantId']);
   }
 
   @override
@@ -26,15 +29,29 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
     String selectedValue = "Delivery";
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.favorite_border)),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(Icons.favorite_border, color: Colors.white),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: DropdownButtonHideUnderline(
               child: DropdownButton(
+                dropdownColor: Colors.black.withOpacity(0.8),
                 items:
                     ["Delivery", "Pickup"].map((String item) {
-                      return DropdownMenuItem(value: item, child: Text(item));
+                      return DropdownMenuItem(
+                        value: item,
+                        child: Text(
+                          item,
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      );
                     }).toList(),
                 value: selectedValue,
                 onChanged: (value) {
@@ -43,20 +60,21 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
                   });
                 },
                 isDense: true,
-                icon: Icon(Icons.keyboard_arrow_down),
+                icon: Icon(Icons.keyboard_arrow_down, color: Colors.white),
               ),
             ),
           ),
         ],
       ),
-      body: SafeArea(child: _buildUi()),
+      body: _buildUi(),
+      extendBodyBehindAppBar: true,
     );
   }
 
   Future<void> fetchReviews(String restaurantId) async {
     if (!mounted) return;
     setState(() {
-      isLoading = true;
+      isReviewLoading = true;
     });
     try {
       QuerySnapshot reviewsSnapshot =
@@ -77,17 +95,17 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
       if (mounted) {
         setState(() {
-          data = fetchedReviews;
+          reviewData = fetchedReviews;
         });
       }
     } catch (e) {
       // Handle error
     } finally {
       if (!mounted) {
-        isLoading = false;
+        isReviewLoading = false;
       } else {
         setState(() {
-          isLoading = false;
+          isReviewLoading = false;
         });
       }
     }
@@ -98,22 +116,73 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            child: Column(
-              children: [
-                _restaurantDetails(),
-                SectionTitle(title: "For You", showSeeAll: false, onTap: () {}),
-                SectionTitle(
-                  title: "What people say",
-                  showSeeAll: false,
-                  onTap: () {},
-                ),
-                _reviews(),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                children: [
+                  _restaurantDetails(),
+                  SectionTitle(
+                    title: "For You",
+                    showSeeAll: false,
+                    onTap: () {},
+                  ),
+                  _menu(),
+                  SectionTitle(
+                    title: "What people say",
+                    showSeeAll: false,
+                    onTap: () {},
+                  ),
+                  _reviews(),
+                ],
+              ),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> fetchMenu(String restaurantId) async {
+    setState(() {
+      isMenuLoading = true;
+    });
+
+    try {
+      QuerySnapshot menuSnapshot =
+          await FirebaseFirestore.instance
+              .collection('restaurants')
+              .doc(restaurantId)
+              .collection('menu')
+              .get();
+
+      List<Map<String, dynamic>> fetchedMenu =
+          menuSnapshot.docs.map((doc) {
+            return {
+              'name': doc['name'] ?? '',
+              'price': doc['price'] ?? 0,
+              'imageUrl': doc['imageUrl'] ?? '',
+              'category': doc['category'] ?? '',
+            };
+          }).toList();
+
+      if (mounted) {
+        setState(() {
+          menuData = fetchedMenu;
+        });
+      }
+    } catch (e) {
+      // Handle error
+    } finally {
+      if (!mounted) {
+        setState(() {
+          isMenuLoading = false;
+        });
+      } else {
+        setState(() {
+          isMenuLoading = false;
+        });
+      }
+    }
   }
 
   Widget _restaurantDetails() {
@@ -122,88 +191,126 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
 
     return Center(
       child: SizedBox(
-        width: screenWidth * 0.95,
-        child: Container(
-          padding: EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(15)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.shade300,
-                spreadRadius: 1,
-                blurRadius: 1,
-                offset: Offset(0, 0),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: screenWidth * 0.28,
-                height: screenHeight * 0.13,
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.all(Radius.circular(15)),
-                  child: Image.network(
-                    widget.restaurant['photoUrl'],
-                    fit: BoxFit.cover,
+        width: screenWidth,
+        height: screenHeight * 0.4,
+        child: (Stack(
+          children: [
+            Container(
+              width: screenWidth,
+              height: screenHeight,
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(widget.restaurant['photoUrl']),
+                  fit: BoxFit.cover,
+                  colorFilter: ColorFilter.mode(
+                    Colors.black.withOpacity(0.5), // Adjust opacity here
+                    BlendMode.darken, // Darkens the image
                   ),
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: SizedBox(
-                  height: screenHeight * 0.13,
-                  width: screenWidth * 0.5,
+            ),
+
+            Positioned(
+              left: 0,
+              bottom: 0,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 20,
+                ),
+                child: Container(
+                  width: screenWidth * 0.7,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         "${widget.restaurant['name']}",
                         style: TextStyle(
-                          fontSize: 18,
+                          color: Colors.white,
+                          fontSize: 30,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
                         "${widget.restaurant['address']}",
-                        maxLines: 1,
+                        style: TextStyle(color: Colors.white),
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade700,
-                        ),
+                        maxLines: 2,
                       ),
-                      Text(
-                        "⭐ 4.7",
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.star,
+                                  color: Colors.yellow,
+                                  size: 18,
+                                ),
+                                Text(
+                                  "4.7",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.free_breakfast,
+                                  color: Colors.orange,
+                                  size: 18,
+                                ),
+                                Text(
+                                  "5 Promo Update",
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                      Text("From 45 mins", style: TextStyle(fontSize: 14)),
                     ],
                   ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          ],
+        )),
       ),
     );
   }
 
   Widget _reviews() {
-    if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+    List<dynamic> reviews = reviewData.take(5).toList();
+
+    if (reviews.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
+          child: Text("No Reviews", style: TextStyle(color: Colors.grey)),
+        ),
+      );
     }
-    if (data.isEmpty) {
-      return const Center(child: Text("No reviews"));
-    }
-    List<dynamic> reviews = data.take(5).toList();
 
     return SizedBox(
       width: MediaQuery.sizeOf(context).width * 0.95,
@@ -250,6 +357,102 @@ class _RestaurantDetailsState extends State<RestaurantDetails> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _menu() {
+    if (isMenuLoading) {
+      return const Padding(
+        padding: EdgeInsets.all(20.0),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (menuData.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Center(
+          child: Text(
+            "No Menu Available",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return Wrap(
+      spacing: 5,
+      runSpacing: 5,
+      children:
+          menuData.map((item) {
+            return SizedBox(
+              width: MediaQuery.of(context).size.width / 2 - 20,
+              child: Card(
+                elevation: 0,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    (item['imageUrl'] != null && item['imageUrl'].isNotEmpty)
+                        ? ClipRRect(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          child: Image.network(
+                            item['imageUrl'],
+                            width: double.infinity,
+                            height: 120,
+                            fit: BoxFit.contain,
+                          ),
+                        )
+                        : ClipRRect(
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          child: Image.network(
+                            "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg?20200913095930",
+                            width: double.infinity,
+                            height: 120,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item['name'],
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          Row(
+                            children: [
+                              Text(
+                                "P ${item['price']}",
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }

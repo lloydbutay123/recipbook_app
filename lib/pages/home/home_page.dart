@@ -16,10 +16,10 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    BrowseRecipesPage(),
-    ExplorePage(),
-    FavoritePage(),
-    ProfilePage(),
+    const BrowseRecipesPage(),
+    const ExplorePage(),
+    const FavoritePage(),
+    const ProfilePage(),
   ];
 
   @override
@@ -27,19 +27,17 @@ class _HomePageState extends State<HomePage> {
     super.initState();
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: IndexedStack(index: _selectedIndex, children: [..._pages]),
       bottomNavigationBar: BottomNavBar(
         selectedIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
     );
   }

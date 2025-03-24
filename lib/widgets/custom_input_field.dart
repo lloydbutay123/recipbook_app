@@ -8,6 +8,7 @@ class CustomInputField extends StatelessWidget {
   final bool obscureText;
   final bool readOnly;
   final VoidCallback? onTap;
+  final InputBorder? inputBorder;
 
   const CustomInputField({
     required this.label,
@@ -16,6 +17,7 @@ class CustomInputField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.obscureText = false,
     this.readOnly = false,
+    this.inputBorder,
     this.onTap,
     super.key,
   });
@@ -29,6 +31,7 @@ class CustomInputField extends StatelessWidget {
           label,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
+        SizedBox(height: 5),
         TextFormField(
           controller: controller,
           keyboardType: keyboardType,
@@ -36,11 +39,8 @@ class CustomInputField extends StatelessWidget {
           obscureText: obscureText,
           onTap: onTap,
           decoration: InputDecoration(
-            border: const UnderlineInputBorder(),
+            border: inputBorder,
             hintText: "Enter your $label",
-            enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400, width: 2),
-            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
@@ -49,7 +49,7 @@ class CustomInputField extends StatelessWidget {
             return null;
           },
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
       ],
     );
   }

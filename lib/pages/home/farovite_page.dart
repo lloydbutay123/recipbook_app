@@ -84,15 +84,27 @@ class _FavoritesPageState extends State<FavoritePage> {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: ListTile(
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: Image.network(
-                      recipe['image'],
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                  leading:
+                      (recipe['imageUrl'] != null &&
+                              recipe['imageUrl'].isNotEmpty)
+                          ? ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              recipe['imageUrl'] ?? '',
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.contain,
+                            ),
+                          )
+                          : ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.network(
+                              "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg?20200913095930",
+                              width: 80,
+                              height: 80,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                   title: Text(
                     recipe['name'],
                     style: const TextStyle(
@@ -100,7 +112,7 @@ class _FavoritesPageState extends State<FavoritePage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  subtitle: Text("Category: ${recipe['mealType'].join(", ")}"),
+                  subtitle: Text("Category: ${recipe['category']}"),
                   trailing: IconButton(
                     icon: const Icon(Icons.favorite, color: Colors.red),
                     onPressed: () {

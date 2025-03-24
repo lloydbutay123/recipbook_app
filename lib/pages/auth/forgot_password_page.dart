@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
+import 'package:recepies_app/widgets/custom_input_field.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -9,6 +11,7 @@ class ForgotPasswordPage extends StatefulWidget {
 }
 
 class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
+  final formKey = GlobalKey<FormState>();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   bool isLoading = false;
@@ -27,7 +30,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         children: [
           _forgotPasswordForm(),
           const SizedBox(height: 20),
-          _continueButton(),
+          CustomButton(
+            label: "Continue",
+            isLoading: isLoading,
+            backgroundColor: Colors.orangeAccent,
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
+            onPressed:
+                isLoading
+                    ? null
+                    : () async {
+                      await _resetPassword();
+                    },
+          ),
         ],
       ),
     );
@@ -35,17 +50,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   Future<void> _resetPassword() async {
     String email = _emailController.text.trim();
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      isLoading = true;
+    });
 
     if (email.isEmpty) {
+      setState(() {
+        isLoading = false;
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Please enter your email")));
       return;
     }
-
-    setState(() {
-      isLoading = true;
-    });
 
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -71,6 +90,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       }
 
       if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(errorMessage)));
@@ -82,60 +104,37 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     }
   }
 
-  Widget _continueButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: ElevatedButton(
-        onPressed:
-            isLoading ? null : _resetPassword, // Disable button when loading
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orangeAccent,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child:
-            isLoading
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const Text("Continue"),
-      ),
-    );
-  }
-
   Widget _forgotPasswordForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Enter your email address",
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
+    return Form(
+      key: formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Enter your email address",
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          "Your email address will serve as backup and a login credential.",
-          style: TextStyle(color: Colors.grey, fontSize: 14),
-        ),
-        const SizedBox(height: 20),
-        TextFormField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
+          const SizedBox(height: 10),
+          const Text(
+            "Your email address will serve as backup and a login credential.",
+            style: TextStyle(color: Colors.grey, fontSize: 14),
+          ),
+          const SizedBox(height: 20),
+          CustomInputField(
+            label: "Email",
+            controller: _emailController,
+            errorMessage: "Please enter your email",
+            inputBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: const BorderSide(color: Colors.grey, width: 1),
             ),
-            labelStyle: const TextStyle(color: Colors.black),
-            labelText: "Email",
-            hintText: "Enter your email address",
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

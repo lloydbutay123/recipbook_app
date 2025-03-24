@@ -11,7 +11,7 @@ class AuthService {
   Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null; // User canceled sign-in
+      if (googleUser == null) return null;
 
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
@@ -49,21 +49,15 @@ class AuthService {
 
   Future<User?> signInWithFacebook() async {
     try {
-      print("Starting Facebook login...");
       final LoginResult result = await FacebookAuth.instance.login(
         permissions: ['email', 'public_profile'],
       );
 
-      print("Facebook login status: ${result.status}");
-
       if (result.status == LoginStatus.success) {
         final AccessToken? accessToken = result.accessToken;
         if (accessToken == null) {
-          print("Facebook login failed: AccessToken is null.");
           return null;
         }
-
-        print("Facebook Access Token: ${accessToken.tokenString}");
 
         final OAuthCredential credential = FacebookAuthProvider.credential(
           accessToken.tokenString,
@@ -73,13 +67,30 @@ class AuthService {
             .signInWithCredential(credential);
 
         final User? user = userCredential.user;
+        if (user != null) {
+          DocumentSnapshot userDoc =
+              await _firestore.collection('users').doc(user.uid).get();
+          if (!userDoc.exists) {
+            final userData = await FacebookAuth.instance.getUserData();
+
+            String? profilePicture =
+                user.photoURL ?? userData['picture']['data']['url'] ?? "";
+
+            await _firestore.collection('users').doc(user.uid).set({
+              'uid': user.uid,
+              'name': user.displayName ?? "Facebook User",
+              'email': user.email,
+              'photoUrl': profilePicture ?? "",
+              'createdAt': FieldValue.serverTimestamp(),
+              'signInMethod': "facebook",
+            });
+          }
+        }
         return user;
       } else {
-        print("Facebook login failed: ${result.message}");
         return null;
       }
     } catch (e) {
-      print("Error during Facebook login: $e");
       return null;
     }
   }

@@ -4,6 +4,9 @@ import 'package:recepies_app/pages/auth/forgot_password_page.dart';
 import 'package:recepies_app/pages/home/home_page.dart';
 import 'package:recepies_app/pages/auth/signup_page.dart';
 import 'package:recepies_app/services/auth_service.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
+import 'package:recepies_app/widgets/custom_input_field.dart';
+import 'package:recepies_app/widgets/custom_title.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -27,23 +30,9 @@ class _LoginPageState extends State<LoginPage> {
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [_title(), _loginForm()],
-      ),
-    );
-  }
-
-  Widget _title() {
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Hello",
-            style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 5),
-          Text("Welcome Back!", style: TextStyle(fontSize: 35)),
+          CustomTitle(title: "Hello", subTitle: "Welcome back!"),
+          _loginForm(),
         ],
       ),
     );
@@ -90,39 +79,31 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           mainAxisSize: MainAxisSize.max,
           children: [
-            TextFormField(
+            CustomInputField(
+              label: "Email",
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15), // Rounded border
-                  borderSide: BorderSide(color: Colors.grey, width: 1),
-                ),
-                labelStyle: const TextStyle(color: Colors.black),
-                labelText: "Email",
-                hintText: "Enter Email Address",
+              errorMessage: "Please enter your email",
+              inputBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(15),
+                borderSide: const BorderSide(color: Colors.grey, width: 1),
               ),
             ),
             SizedBox(height: 10),
             Stack(
               children: [
-                TextFormField(
+                CustomInputField(
+                  label: 'Password',
                   controller: _passwordController,
-                  keyboardType: TextInputType.text,
+                  errorMessage: "Please enter your password",
                   obscureText: true,
-                  decoration: InputDecoration(
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15), // Rounded border
-                      borderSide: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    labelStyle: const TextStyle(color: Colors.black),
-                    labelText: "Password",
-                    hintText: "Enter Password",
+                  inputBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
                   ),
                 ),
                 Positioned(
                   right: 0,
-                  top: 0,
+                  top: 15,
                   bottom: 0,
                   child: Align(
                     alignment: Alignment.center,
@@ -148,7 +129,19 @@ class _LoginPageState extends State<LoginPage> {
               ],
             ),
             SizedBox(height: 10),
-            _loginButton(),
+            CustomButton(
+              label: "Login",
+              isLoading: isLoading,
+              backgroundColor: Colors.orangeAccent,
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              onPressed:
+                  isLoading
+                      ? null
+                      : () async {
+                        await signInWithEmailAndPassword();
+                      },
+            ),
             SizedBox(height: 40),
             Text("Sign up with"),
             SizedBox(height: 10),
@@ -157,26 +150,6 @@ class _LoginPageState extends State<LoginPage> {
             _signupButton(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _loginButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width,
-      child: ElevatedButton(
-        onPressed: () async {
-          await signInWithEmailAndPassword();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orangeAccent,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: const Text("Login"),
       ),
     );
   }

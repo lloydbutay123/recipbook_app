@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
 import 'package:recepies_app/widgets/custom_input_field.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -97,34 +98,20 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               obscureText: true,
             ),
             SizedBox(height: 40),
-            _changePasswordButton(),
+            CustomButton(
+              label: "Change Password",
+              isLoading: isLoading,
+              backgroundColor: Colors.orangeAccent,
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              onPressed:
+                  isLoading
+                      ? null
+                      : () async {
+                        await _changePassword();
+                      },
+            ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _changePasswordButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: ElevatedButton(
-        onPressed: () async {
-          await _changePassword();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orangeAccent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          "Update Password".toUpperCase(),
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
         ),
       ),
     );

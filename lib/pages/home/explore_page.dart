@@ -149,21 +149,69 @@ class _ExplorePageState extends State<ExplorePage> {
     });
 
     try {
-      var res = await http.get(Uri.parse(url));
-      var jsonData = jsonDecode(res.body);
+      QuerySnapshot restaurantSnapshot =
+          await FirebaseFirestore.instance.collection('restaurants').get();
+
+      List<Map<String, dynamic>> allMenus = [];
+
+      for (var restaurantDoc in restaurantSnapshot.docs) {
+        String restaurantId = restaurantDoc.id;
+        String restaurantName = restaurantDoc['name'] ?? "Unknown Restaurant";
+        String restaurantPhotoUrl = restaurantDoc['photoUrl'] ?? "";
+        String restaurantAddress = restaurantDoc['address'] ?? "";
+
+        QuerySnapshot menuSnapshot =
+            await FirebaseFirestore.instance
+                .collection('restaurants')
+                .doc(restaurantId)
+                .collection('menu')
+                .get();
+
+        for (var menuDoc in menuSnapshot.docs) {
+          Map<String, dynamic> menuItem =
+              menuDoc.data() as Map<String, dynamic>;
+
+          QuerySnapshot reviewsSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('restaurants')
+                  .doc(restaurantId)
+                  .collection('menu')
+                  .doc(menuDoc.id)
+                  .collection('reviews')
+                  .get();
+
+          double totalRating = 0;
+          int reviewCount = reviewsSnapshot.docs.length;
+
+          for (var review in reviewsSnapshot.docs) {
+            totalRating += (review['rating'] as num).toDouble();
+          }
+
+          double averageRating =
+              reviewCount > 0 ? totalRating / reviewCount : 0.0;
+
+          menuItem['restaurantId'] = restaurantId;
+          menuItem['restaurantName'] = restaurantName;
+          menuItem['restaurantPhotoUrl'] = restaurantPhotoUrl;
+          menuItem['menuId'] = menuDoc.id;
+          menuItem['restaurantAddress'] = restaurantAddress;
+          menuItem['averageRating'] = averageRating;
+
+          allMenus.add(menuItem);
+        }
+      }
 
       setState(() {
         if (mealType == "all") {
-          data = jsonData['recipes'];
+          data = allMenus;
+          data.shuffle();
         } else {
           data =
-              jsonData['recipes']
-                  .where(
-                    (recipe) => (recipe['mealType'] as List)
-                        .map((type) => type.toLowerCase())
-                        .contains(mealType.toLowerCase()),
-                  )
-                  .toList();
+              allMenus.where((recipe) {
+                String category =
+                    (recipe['category'] ?? '').toString().toLowerCase();
+                return category == mealType.toLowerCase();
+              }).toList();
         }
       });
     } catch (e) {
@@ -197,7 +245,7 @@ class _ExplorePageState extends State<ExplorePage> {
       itemCount: data.length,
       itemBuilder: (context, index) {
         var recipe = data[index];
-        String recipeId = recipe['id'].toString();
+        String recipeId = recipe['menuId'].toString();
         bool isFavorite = favoriteRecipeIds.contains(recipeId);
 
         return GestureDetector(
@@ -226,10 +274,10 @@ class _ExplorePageState extends State<ExplorePage> {
                     child: ClipRRect(
                       borderRadius: const BorderRadius.all(Radius.circular(15)),
                       child: Image.network(
-                        recipe['image'],
+                        recipe['imageUrl'],
                         width: screenWidth * 0.35,
                         height: screenHeight * 0.16,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
@@ -258,20 +306,34 @@ class _ExplorePageState extends State<ExplorePage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "Calories: ${recipe['caloriesPerServing']}",
+                                  "${recipe['restaurantName']} - ${recipe['restaurantAddress']}",
                                   style: const TextStyle(
-                                    fontSize: 14,
+                                    fontSize: 12,
                                     color: Colors.grey,
                                   ),
                                   maxLines: 1,
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  "${recipe['rating']} ⭐",
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Row(
+                                  children: [
+                                    Icon(Icons.star, color: Colors.yellow),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${recipe['averageRating']}",
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      "P ${recipe['price'].toString()}",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

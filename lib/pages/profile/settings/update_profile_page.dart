@@ -5,9 +5,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
 import 'package:recepies_app/widgets/custom_input_field.dart';
 import 'package:recepies_app/widgets/image_container.dart';
-import 'package:recepies_app/widgets/image_picker.dart';
 
 class UpdateProfilePage extends StatefulWidget {
   const UpdateProfilePage({super.key});
@@ -27,6 +27,8 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
   bool isLoading = false;
   File? _selectedImage;
   String? _imageUrl;
+  bool _isUpdatingProfile = false;
+  bool _isDeletingAccount = false;
 
   @override
   void initState() {
@@ -98,7 +100,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     if (!formKey.currentState!.validate()) return;
 
     setState(() {
-      isLoading = true;
+      _isUpdatingProfile = true;
     });
 
     User? user = _auth.currentUser;
@@ -139,7 +141,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
       if (mounted) {
         setState(() {
           _imageUrl = downloadUrl ?? _imageUrl;
-          isLoading = false;
+          _isUpdatingProfile = false;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -151,7 +153,7 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          isLoading = false;
+          _isUpdatingProfile = false;
         });
 
         ScaffoldMessenger.of(
@@ -241,50 +243,43 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
             ),
 
             SizedBox(height: 40),
-            _updateProfileButton(),
+            CustomButton(
+              label: "Update Profile".toUpperCase(),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              isLoading: _isUpdatingProfile,
+              backgroundColor: Colors.orangeAccent,
+              onPressed:
+                  isLoading
+                      ? null
+                      : () async {
+                        await _updateProfile();
+                      },
+            ),
             SizedBox(height: 10),
-            _deleteProfileButton(),
+            CustomButton(
+              label: "Delete Account".toUpperCase(),
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              isLoading: _isDeletingAccount,
+              backgroundColor: Colors.black,
+              onPressed:
+                  isLoading
+                      ? null
+                      : () async {
+                        await _deleteAccount();
+                      },
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _updateProfileButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: ElevatedButton(
-        onPressed:
-            isLoading
-                ? null
-                : () async {
-                  await _updateProfile();
-                },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orangeAccent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child:
-            isLoading
-                ? const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                )
-                : Text(
-                  "Update Profile".toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-      ),
-    );
-  }
-
   Future<void> _deleteAccount() async {
+    setState(() {
+      _isDeletingAccount = true;
+    });
     User? user = FirebaseAuth.instance.currentUser;
     try {
       await FirebaseFirestore.instance
@@ -313,33 +308,11 @@ class _UpdateProfilePageState extends State<UpdateProfilePage> {
           );
         }
       }
+    } finally {
+      setState(() {
+        _isDeletingAccount = false;
+      });
     }
-  }
-
-  Widget _deleteProfileButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: ElevatedButton(
-        onPressed: () async {
-          await _deleteAccount();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-        child: Text(
-          "Delete Account".toUpperCase(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
   }
 
   Future<void> _selectDate(BuildContext context) async {

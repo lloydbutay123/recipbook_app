@@ -100,7 +100,10 @@ class _BrowseRestaurantState extends State<BrowseRestaurant> {
 
   Widget _restaurantList() {
     if (isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.8,
+        child: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     if (restaurants.isEmpty) {

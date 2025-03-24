@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:recepies_app/pages/auth/signup_page.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -100,30 +101,21 @@ class _LandingPageState extends State<LandingPage> {
 
                   const SizedBox(height: 40),
 
-                  // Get Started Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignupPage(),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15),
+                  CustomButton(
+                    label: "Get Started",
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                    isLoading: false,
+                    backgroundColor: Colors.black,
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignupPage(),
                         ),
-                      ),
-                      child: const Text("Get Started"),
-                    ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),

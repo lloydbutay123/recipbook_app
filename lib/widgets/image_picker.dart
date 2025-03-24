@@ -25,9 +25,8 @@ class MyImagePicker extends StatelessWidget {
   }
 
   Future<File?> _pickImage() async {
-    final ImagePicker _picker =
-        ImagePicker(); // Renamed the instance to _picker
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    final ImagePicker picker = ImagePicker(); // Renamed the instance to _picker
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
 
     if (image != null) {
       return File(image.path);

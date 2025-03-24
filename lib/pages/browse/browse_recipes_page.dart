@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:recepies_app/pages/browse/browse_restaurant.dart';
@@ -17,8 +18,10 @@ class BrowseRecipesPage extends StatefulWidget {
   State<BrowseRecipesPage> createState() => _BrowseRecipesPageState();
 }
 
-class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
-  final String url = "https://dummyjson.com/recipes";
+class _BrowseRecipesPageState extends State<BrowseRecipesPage>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   List<dynamic> data = [];
   bool isLoading = true;
   bool isPopularLoading = true;
@@ -26,14 +29,17 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   Set<String> favoriteRecipeIds = {};
   List<dynamic> mostPopularRecipes = [];
   bool hasFetchedPopular = false;
+  bool isMostPopularLoading = false;
+  bool isMenuLoading = true;
+  List<dynamic> menuData = [];
 
   @override
   void initState() {
     super.initState();
     _loadFavorites();
     fetchMostPopularRecipes();
-    fetchData("all");
-    fetchRecommendedRestaurants();
+    fetchAllMenusFromAllRestaurants();
+    _recommendedRestaurantsFuture = fetchRecommendedRestaurants();
   }
 
   void _loadFavorites() async {
@@ -88,30 +94,80 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     if (!mounted) return;
     setState(() {
       isPopularLoading = true;
+      isMostPopularLoading = true;
     });
 
     try {
-      var res = await http.get(Uri.parse(url));
-      var jsonData = jsonDecode(res.body);
+      QuerySnapshot mostPopularSnapshot =
+          await FirebaseFirestore.instance.collection('restaurants').get();
+
+      List<Map<String, dynamic>> popularRecipes = [];
+
+      for (var restaurantDoc in mostPopularSnapshot.docs) {
+        String restaurantId = restaurantDoc.id;
+        String restaurantName = restaurantDoc['name'] ?? "Unknown Restaurant";
+        String restaurantPhotoUrl = restaurantDoc['photoUrl'] ?? "";
+        String restaurantAddress = restaurantDoc['address'] ?? "";
+
+        QuerySnapshot menuSnapshot =
+            await FirebaseFirestore.instance
+                .collection('restaurants')
+                .doc(restaurantId)
+                .collection('menu')
+                .get();
+
+        for (var mostPopularDoc in menuSnapshot.docs) {
+          Map<String, dynamic> mostPopularItem =
+              mostPopularDoc.data() as Map<String, dynamic>;
+
+          QuerySnapshot reviewsSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('restaurants')
+                  .doc(restaurantId)
+                  .collection('menu')
+                  .doc(mostPopularDoc.id)
+                  .collection('reviews')
+                  .get();
+
+          double totalRating = 0;
+          int reviewCount = reviewsSnapshot.docs.length;
+
+          for (var reviewDoc in reviewsSnapshot.docs) {
+            double rating = (reviewDoc['rating'] as num).toDouble();
+            totalRating += rating;
+          }
+
+          double averageRating =
+              reviewCount > 0 ? totalRating / reviewCount : 0.0;
+          popularRecipes.add({
+            'restaurantId': restaurantId,
+            'restaurantName': restaurantName,
+            'restaurantPhotoUrl': restaurantPhotoUrl,
+            'restaurantAddress': restaurantAddress,
+            'menuId': mostPopularDoc.id,
+            'name': mostPopularItem['name'],
+            'imageUrl': mostPopularItem['imageUrl'],
+            'price': mostPopularItem['price'],
+            'category': mostPopularItem['category'],
+            'rating': averageRating,
+          });
+        }
+      }
+      popularRecipes.sort((a, b) => b['rating'].compareTo(a['rating']));
 
       setState(() {
-        mostPopularRecipes = List.from(jsonData['recipes']);
-        mostPopularRecipes.sort((a, b) {
-          if (b['rating'] == a['rating']) {
-            return b['reviewCount'].compareTo(a['reviewCount']);
-          }
-          return b['rating'].compareTo(a['rating']);
-        });
-        mostPopularRecipes = mostPopularRecipes.take(10).toList();
+        mostPopularRecipes = popularRecipes;
       });
     } catch (e) {
       // Handle error
     } finally {
       if (!mounted) {
         isPopularLoading = false;
+        isMostPopularLoading = false;
       } else {
         setState(() {
           isPopularLoading = false;
+          isMostPopularLoading = false;
         });
       }
     }
@@ -160,39 +216,80 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     }
   }
 
-  Future<void> fetchData(String mealType) async {
+  Future<void> fetchAllMenusFromAllRestaurants() async {
     if (!mounted) return;
     setState(() {
-      isLoading = true;
+      isMenuLoading = true;
     });
 
     try {
-      var res = await http.get(Uri.parse(url));
-      var jsonData = jsonDecode(res.body);
+      QuerySnapshot restaurantSnapshot =
+          await FirebaseFirestore.instance.collection('restaurants').get();
 
-      setState(() {
-        if (mealType == "all") {
-          data = jsonData['recipes'].take(10).toList();
-        } else {
-          data =
-              jsonData['recipes']
-                  .where(
-                    (recipe) => (recipe['mealType'] as List)
-                        .map((type) => type.toLowerCase())
-                        .contains(mealType.toLowerCase()),
-                  )
-                  .take(10)
-                  .toList();
+      List<Map<String, dynamic>> allMenus = [];
+
+      for (var restaurantDoc in restaurantSnapshot.docs) {
+        String restaurantId = restaurantDoc.id;
+        String restaurantName = restaurantDoc['name'] ?? "Unknown Restaurant";
+        String restaurantPhotoUrl = restaurantDoc['photoUrl'] ?? "";
+        String restaurantAddress = restaurantDoc['address'] ?? "";
+
+        QuerySnapshot menuSnapshot =
+            await FirebaseFirestore.instance
+                .collection('restaurants')
+                .doc(restaurantId)
+                .collection('menu')
+                .get();
+
+        for (var menuDoc in menuSnapshot.docs) {
+          Map<String, dynamic> menuItem =
+              menuDoc.data() as Map<String, dynamic>;
+
+          QuerySnapshot reviewsSnapshot =
+              await FirebaseFirestore.instance
+                  .collection('restaurants')
+                  .doc(restaurantId)
+                  .collection('menu')
+                  .doc(menuDoc.id)
+                  .collection('reviews')
+                  .get();
+
+          double totalRating = 0;
+          int reviewCount = reviewsSnapshot.docs.length;
+
+          for (var review in reviewsSnapshot.docs) {
+            totalRating += (review['rating'] as num).toDouble();
+          }
+
+          double averageRating =
+              reviewCount > 0 ? totalRating / reviewCount : 0.0;
+
+          menuItem['restaurantId'] = restaurantId;
+          menuItem['restaurantName'] = restaurantName;
+          menuItem['restaurantPhotoUrl'] = restaurantPhotoUrl;
+          menuItem['menuId'] = menuDoc.id;
+          menuItem['restaurantAddress'] = restaurantAddress;
+          menuItem['averageRating'] = averageRating;
+
+          allMenus.add(menuItem);
         }
-      });
+      }
+
+      if (mounted) {
+        setState(() {
+          menuData = allMenus;
+          menuData.shuffle();
+          isMenuLoading = false;
+        });
+      }
     } catch (e) {
       // Handle error
     } finally {
       if (!mounted) {
-        isLoading = false;
+        isMenuLoading = false;
       } else {
         setState(() {
-          isLoading = false;
+          isMenuLoading = false;
         });
       }
     }
@@ -246,13 +343,13 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
   }
 
   Widget _popularRecipesList() {
-    if (isLoading) {
+    if (isMostPopularLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    if (data.isEmpty) {
+    if (mostPopularRecipes.isEmpty) {
       return const Center(child: Text("No popular recipes found."));
     }
-    List<dynamic> popularRecipes = data.take(5).toList();
+    List<dynamic> popularRecipes = mostPopularRecipes.take(5).toList();
     double screenWidth = MediaQuery.sizeOf(context).width;
     double screenHeight = MediaQuery.sizeOf(context).height;
 
@@ -286,41 +383,37 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(15),
                       child: Image.network(
-                        recipe['image'],
+                        recipe['imageUrl'],
                         width: screenWidth * 0.37,
                         height: screenHeight * 0.16,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
                       ),
                     ),
                     const SizedBox(height: 5),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            height: 40,
-                            alignment: Alignment.topLeft,
-                            child: Text(
-                              recipe['name'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            recipe['name'],
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
+                          Text(
+                            '${recipe['restaurantName']} - ${recipe['restaurantAddress']}',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                          SizedBox(height: 5),
                           Row(
                             mainAxisAlignment: MainAxisAlignment.start,
                             children: [
-                              Text(
-                                "${recipe['cookTimeMinutes']} mins",
-                                style: const TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
                               const SizedBox(width: 5),
                               const Icon(
                                 Icons.star,
@@ -353,7 +446,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
 
   Widget _recommendedRestaurants() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: fetchRecommendedRestaurants(),
+      future: _recommendedRestaurantsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -460,14 +553,17 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     );
   }
 
+  late Future<List<Map<String, dynamic>>> _recommendedRestaurantsFuture;
+
   Widget _recipeList() {
-    if (isLoading) {
+    if (isMenuLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (data.isEmpty) {
+    if (menuData.isEmpty) {
       return const Center(child: Text("No recipes found for this category."));
     }
+    List<dynamic> recipeList = menuData.take(10).toList();
 
     double screenWidth = MediaQuery.sizeOf(context).width;
     double screenHeight = MediaQuery.sizeOf(context).height;
@@ -475,11 +571,11 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: data.length,
+      itemCount: recipeList.length,
       itemBuilder: (context, index) {
-        var recipe = data[index];
-        String recipeId = recipe['id'].toString();
-        bool isFavorite = favoriteRecipeIds.contains(recipeId);
+        var recipe = recipeList[index];
+        String menuId = recipe['menuId'].toString();
+        bool isFavorite = favoriteRecipeIds.contains(menuId);
 
         return GestureDetector(
           onTap: () {
@@ -501,18 +597,32 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
               ),
               child: Row(
                 children: [
-                  // Image filling full height
                   Padding(
                     padding: const EdgeInsets.all(5.0),
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.all(Radius.circular(15)),
-                      child: Image.network(
-                        recipe['image'],
-                        width: screenWidth * 0.35,
-                        height: screenHeight * 0.16,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                    child:
+                        (recipe['imageUrl'] != null && recipe['imageUrl'] != '')
+                            ? ClipRRect(
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(15),
+                              ),
+                              child: Image.network(
+                                recipe['imageUrl'] ?? '',
+                                width: screenWidth * 0.35,
+                                height: screenHeight * 0.16,
+                                fit: BoxFit.contain,
+                              ),
+                            )
+                            : ClipRRect(
+                              borderRadius: const BorderRadius.all(
+                                Radius.circular(15),
+                              ),
+                              child: Image.network(
+                                "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg?20200913095930",
+                                width: screenWidth * 0.35,
+                                height: screenHeight * 0.16,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
                   ),
                   // Content aligned to the start
                   Expanded(
@@ -523,13 +633,13 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width: MediaQuery.sizeOf(context).width * 0.30,
+                            width: MediaQuery.sizeOf(context).width * 0.35,
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  recipe['name'],
+                                  recipe['name'] ?? '',
                                   style: const TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -539,20 +649,35 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  "Calories: ${recipe['caloriesPerServing']}",
-                                  style: const TextStyle(
-                                    fontSize: 14,
+                                  '${recipe['restaurantName']} - ${recipe['restaurantAddress']}',
+                                  style: TextStyle(
                                     color: Colors.grey,
+                                    fontSize: 12,
                                   ),
+                                  overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
                                 const SizedBox(height: 4),
-                                Text(
-                                  "${recipe['rating']} ⭐",
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                Row(
+                                  children: [
+                                    Icon(Icons.star, color: Colors.yellow),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      "${recipe['averageRating']}",
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Text(
+                                      "P ${recipe['price'].toString()}",
+                                      style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -570,7 +695,7 @@ class _BrowseRecipesPageState extends State<BrowseRecipesPage> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  _toggleFavorite(recipeId, recipe);
+                                  _toggleFavorite(menuId, recipe);
                                 },
                                 icon: Icon(
                                   isFavorite

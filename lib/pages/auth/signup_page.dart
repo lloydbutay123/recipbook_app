@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:recepies_app/pages/auth/login_page.dart';
+import 'package:recepies_app/widgets/custom_button.dart';
+import 'package:recepies_app/widgets/custom_title.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -31,29 +33,21 @@ class _SignupPageState extends State<SignupPage> {
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
-        children: [_title(), _loginForm()],
-      ),
-    );
-  }
-
-  Widget _title() {
-    return SizedBox(
-      width: MediaQuery.sizeOf(context).width * 0.95,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Welcome!",
-            style: TextStyle(fontSize: 35, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(height: 5),
-          Text("Create your Account", style: TextStyle(fontSize: 35)),
+          CustomTitle(title: "Welcome!", subTitle: "Create your Account"),
+          _loginForm(),
         ],
       ),
     );
   }
 
   Future<void> createUsernameWithEmailAndPassword() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
     try {
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(
@@ -74,6 +68,9 @@ class _SignupPageState extends State<SignupPage> {
       }
 
       if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Registration successful! Please log in")),
         );
@@ -148,30 +145,22 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
             SizedBox(height: 10),
-            _loginButton(),
+            CustomButton(
+              label: "Register",
+              isLoading: isLoading,
+              backgroundColor: Colors.orangeAccent,
+              fontSize: 14,
+              fontWeight: FontWeight.normal,
+              onPressed:
+                  isLoading
+                      ? null
+                      : () async {
+                        await createUsernameWithEmailAndPassword();
+                      },
+            ),
             _goToLogin(),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _loginButton() {
-    return SizedBox(
-      height: 60,
-      width: MediaQuery.sizeOf(context).width,
-      child: ElevatedButton(
-        onPressed: () async {
-          await createUsernameWithEmailAndPassword();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orangeAccent,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        child: const Text("Register"),
       ),
     );
   }

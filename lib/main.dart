@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.grey.shade100,
         appBarTheme: AppBarTheme(
-          backgroundColor: Colors.grey.shade100,
+          backgroundColor: Colors.transparent,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
           titleTextStyle: GoogleFonts.poppins(
